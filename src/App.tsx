@@ -11,6 +11,7 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import SupervisorInterns from "./pages/supervisor/Interns";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -64,6 +65,14 @@ const App = () => (
               element={
                 <DashboardLayout>
                   <Dashboard />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/supervisor/interns" 
+              element={
+                <DashboardLayout>
+                  <SupervisorInterns />
                 </DashboardLayout>
               } 
             />
