@@ -62,18 +62,7 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full w-64 flex-col bg-card border-r border-border">
-      <div className="flex h-16 items-center px-6 border-b border-border">
-        <Link to="/" className="flex items-center space-x-2">
-          <div className="h-8 w-8 rounded-lg bg-gradient-brand flex items-center justify-center">
-            <span className="text-lg font-bold text-primary-foreground">I</span>
-          </div>
-          <span className="text-lg font-bold bg-gradient-to-r from-primary to-brand-secondary bg-clip-text text-transparent">
-            InternFlow
-          </span>
-        </Link>
-      </div>
-
-      <nav className="flex-1 space-y-2 p-4">
+      <nav className="flex-1 space-y-2 p-4 pt-6">
         {navigation.map((item) => {
           const Icon = item.icon
           const isActive = location.pathname === item.href
