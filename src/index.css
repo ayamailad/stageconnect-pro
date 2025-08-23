@@ -2,41 +2,63 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
+/* InternFlow Design System - All colors, gradients, fonts, etc defined here. 
+All colors MUST be HSL. Color palette based on #ffc75e signature color.
 */
 
 @layer base {
   :root {
+    /* Core Colors - Light Theme */
     --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-
+    --foreground: 20 6% 10%;
+    
+    /* Brand Colors - InternFlow Signature */
+    --brand-primary: 43 100% 68%; /* #ffc75e - signature orange/gold */
+    --brand-primary-foreground: 20 6% 10%;
+    --brand-secondary: 35 100% 55%; /* Complementary orange */
+    --brand-accent: 48 100% 75%; /* Lighter brand variant */
+    
+    /* UI Colors */
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-
+    --card-foreground: 20 6% 10%;
+    
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-
-    --radius: 0.5rem;
+    --popover-foreground: 20 6% 10%;
+    
+    --primary: 43 100% 68%; /* Using brand primary */
+    --primary-foreground: 20 6% 10%;
+    
+    --secondary: 45 25% 95%;
+    --secondary-foreground: 20 6% 10%;
+    
+    --muted: 45 15% 96%;
+    --muted-foreground: 20 6% 45%;
+    
+    --accent: 45 25% 95%;
+    --accent-foreground: 20 6% 10%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    
+    --border: 45 15% 92%;
+    --input: 45 15% 92%;
+    --ring: 43 100% 68%;
+    
+    /* Success & Warning */
+    --success: 120 60% 50%;
+    --success-foreground: 0 0% 98%;
+    --warning: 38 92% 60%;
+    --warning-foreground: 20 6% 10%;
+    
+    /* Gradients */
+    --gradient-brand: linear-gradient(135deg, hsl(43 100% 68%), hsl(35 100% 55%));
+    --gradient-warm: linear-gradient(135deg, hsl(45 25% 98%), hsl(45 15% 96%));
+    
+    /* Shadows */
+    --shadow-brand: 0 10px 30px -5px hsl(43 100% 68% / 0.2);
+    --shadow-soft: 0 4px 20px -4px hsl(20 6% 10% / 0.1);
+    
+    --radius: 0.75rem;
 
     --sidebar-background: 0 0% 98%;
 
@@ -56,33 +78,55 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    /* Core Colors - Dark Theme */
+    --background: 20 6% 7%;
+    --foreground: 45 15% 95%;
+    
+    /* Brand Colors remain consistent */
+    --brand-primary: 43 100% 68%;
+    --brand-primary-foreground: 20 6% 7%;
+    --brand-secondary: 35 100% 55%;
+    --brand-accent: 48 100% 75%;
+    
+    /* UI Colors - Dark Theme */
+    --card: 20 6% 9%;
+    --card-foreground: 45 15% 95%;
+    
+    --popover: 20 6% 9%;
+    --popover-foreground: 45 15% 95%;
+    
+    --primary: 43 100% 68%;
+    --primary-foreground: 20 6% 7%;
+    
+    --secondary: 20 6% 12%;
+    --secondary-foreground: 45 15% 95%;
+    
+    --muted: 20 6% 12%;
+    --muted-foreground: 45 15% 65%;
+    
+    --accent: 20 6% 12%;
+    --accent-foreground: 45 15% 95%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 45 15% 95%;
+    
+    --border: 20 6% 15%;
+    --input: 20 6% 15%;
+    --ring: 43 100% 68%;
+    
+    /* Success & Warning - Dark Theme */
+    --success: 120 60% 50%;
+    --success-foreground: 20 6% 7%;
+    --warning: 38 92% 60%;
+    --warning-foreground: 20 6% 7%;
+    
+    /* Gradients - Dark Theme */
+    --gradient-brand: linear-gradient(135deg, hsl(43 100% 68%), hsl(35 100% 55%));
+    --gradient-dark: linear-gradient(135deg, hsl(20 6% 9%), hsl(20 6% 12%));
+    
+    /* Shadows - Dark Theme */
+    --shadow-brand: 0 10px 30px -5px hsl(43 100% 68% / 0.3);
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.4);
     --sidebar-background: 240 5.9% 10%;
     --sidebar-foreground: 240 4.8% 95.9%;
     --sidebar-primary: 224.3 76.3% 48%;
@@ -100,6 +144,71 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-outfit antialiased;
   }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    @apply bg-muted;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    @apply bg-border rounded-full;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    @apply bg-muted-foreground;
+  }
+}
+
+@layer components {
+  /* Brand Button Variants */
+  .btn-brand {
+    @apply bg-gradient-to-r from-primary to-brand-secondary text-primary-foreground shadow-lg hover:shadow-xl hover:scale-105 transition-all duration-200;
+  }
+  
+  .btn-brand-outline {
+    @apply border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground transition-all duration-200;
+  }
+  
+  /* Card Variants */
+  .card-gradient {
+    @apply bg-gradient-to-br from-card to-muted border border-border/50 shadow-soft;
+  }
+  
+  .card-brand {
+    @apply bg-gradient-to-br from-primary/5 to-brand-accent/5 border border-primary/20 shadow-brand;
+  }
+  
+  /* Animation Classes */
+  .animate-fade-in {
+    animation: fadeIn 0.5s ease-out;
+  }
+  
+  .animate-slide-up {
+    animation: slideUp 0.6s ease-out;
+  }
+  
+  .animate-scale-in {
+    animation: scaleIn 0.3s ease-out;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
 }
