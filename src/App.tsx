@@ -12,6 +12,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import SupervisorInterns from "./pages/supervisor/Interns";
+import Users from "./pages/admin/Users";
+import Applications from "./pages/admin/Applications";
+import Internships from "./pages/admin/Internships";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -73,6 +76,32 @@ const App = () => (
               element={
                 <DashboardLayout>
                   <SupervisorInterns />
+                </DashboardLayout>
+              } 
+            />
+            
+            {/* Admin Routes */}
+            <Route 
+              path="/admin/users" 
+              element={
+                <DashboardLayout>
+                  <Users />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/admin/applications" 
+              element={
+                <DashboardLayout>
+                  <Applications />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/admin/internships" 
+              element={
+                <DashboardLayout>
+                  <Internships />
                 </DashboardLayout>
               } 
             />
