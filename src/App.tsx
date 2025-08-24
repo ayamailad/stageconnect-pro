@@ -12,6 +12,9 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import SupervisorInterns from "./pages/supervisor/Interns";
+import SupervisorThemes from "./pages/supervisor/Themes";
+import SupervisorTasks from "./pages/supervisor/Tasks";
+import SupervisorAttendance from "./pages/supervisor/Attendance";
 import Users from "./pages/admin/Users";
 import Applications from "./pages/admin/Applications";
 import Internships from "./pages/admin/Internships";
@@ -76,6 +79,30 @@ const App = () => (
               element={
                 <DashboardLayout>
                   <SupervisorInterns />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/supervisor/themes" 
+              element={
+                <DashboardLayout>
+                  <SupervisorThemes />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/supervisor/tasks" 
+              element={
+                <DashboardLayout>
+                  <SupervisorTasks />
+                </DashboardLayout>
+              } 
+            />
+            <Route 
+              path="/supervisor/attendance" 
+              element={
+                <DashboardLayout>
+                  <SupervisorAttendance />
                 </DashboardLayout>
               } 
             />
