@@ -54,6 +54,9 @@ All colors MUST be HSL. Color palette based on #ffc75e signature color.
     --gradient-brand: linear-gradient(135deg, hsl(43 100% 68%), hsl(35 100% 55%));
     --gradient-warm: linear-gradient(135deg, hsl(45 25% 98%), hsl(45 15% 96%));
     
+    /* Background Gradients for Tailwind */
+    --bg-gradient-warm: linear-gradient(135deg, hsl(45 25% 98%), hsl(45 15% 96%));
+    
     /* Shadows */
     --shadow-brand: 0 10px 30px -5px hsl(43 100% 68% / 0.2);
     --shadow-soft: 0 4px 20px -4px hsl(20 6% 10% / 0.1);
@@ -144,7 +147,8 @@ All colors MUST be HSL. Color palette based on #ffc75e signature color.
   }
 
   body {
-    @apply bg-background text-foreground font-outfit antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Outfit', sans-serif;
   }
   
   /* Custom scrollbar */
