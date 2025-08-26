@@ -9,6 +9,7 @@ import { Badge } from "@/components/ui/badge"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DatePicker } from "@/components/ui/date-picker"
 import { User, Mail, Phone, MapPin, School, FileText, Camera, Save, Edit, Plus, X } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
@@ -263,12 +264,11 @@ export default function InternProfile() {
                 
                 <div>
                   <Label htmlFor="dateOfBirth">Date de naissance</Label>
-                  <Input
-                    id="dateOfBirth"
-                    type="date"
-                    value={profile.dateOfBirth}
-                    onChange={(e) => setProfile({...profile, dateOfBirth: e.target.value})}
+                  <DatePicker
+                    date={profile.dateOfBirth ? new Date(profile.dateOfBirth) : undefined}
+                    onSelect={(date) => setProfile({...profile, dateOfBirth: date ? date.toISOString().split('T')[0] : ''})}
                     disabled={!isEditing}
+                    placeholder="Sélectionner votre date de naissance"
                   />
                 </div>
                 

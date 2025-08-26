@@ -5,6 +5,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DatePicker } from "@/components/ui/date-picker"
 import { Calendar as CalendarIcon, Search, Clock, CheckCircle, AlertCircle, UserCheck } from "lucide-react"
 
 interface AttendanceRecord {
@@ -465,15 +466,12 @@ export default function Attendance() {
                 <SelectItem value="absent">Absent</SelectItem>
               </SelectContent>
             </Select>
-            <div className="relative">
-              <CalendarIcon className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="pl-10 w-full sm:w-[200px]"
-              />
-            </div>
+            <DatePicker
+              date={selectedDate ? new Date(selectedDate) : undefined}
+              onSelect={(date) => setSelectedDate(date ? date.toISOString().split('T')[0] : '')}
+              placeholder="Sélectionner une date"
+              className="w-full sm:w-[200px]"
+            />
           </div>
 
           <Table>

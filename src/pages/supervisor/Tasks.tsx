@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { DatePicker } from "@/components/ui/date-picker"
 import { ClipboardList, Plus, Search, Edit, CheckCircle, Clock, AlertCircle, Calendar } from "lucide-react"
 
 interface Task {
@@ -204,7 +205,7 @@ export default function Tasks() {
                 </div>
                 <div>
                   <Label htmlFor="dueDate">Date d'échéance</Label>
-                  <Input id="dueDate" type="date" />
+                  <DatePicker placeholder="Sélectionner la date d'échéance" />
                 </div>
               </div>
               <div>
