@@ -42,11 +42,11 @@ export function Sidebar() {
       
       case 'intern':
         return [
-          { icon: LayoutDashboard, label: "Tableau de bord", href: "/dashboard" },
-          { icon: Target, label: "Mes Tâches", href: "/tasks" },
-          { icon: FileText, label: "Mon Stage", href: "/internship" },
-          { icon: Calendar, label: "Pointage", href: "/attendance" },
-          { icon: UserCheck, label: "Mon Profil", href: "/profile" }
+          { icon: LayoutDashboard, label: "Tableau de bord", href: "/intern/dashboard" },
+          { icon: Target, label: "Mes Tâches", href: "/intern/tasks" },
+          { icon: FileText, label: "Mon Stage", href: "/intern/internship" },
+          { icon: Calendar, label: "Pointage", href: "/intern/attendance" },
+          { icon: UserCheck, label: "Mon Profil", href: "/intern/profile" }
         ]
       
       default: // candidate
