@@ -33,7 +33,16 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     const success = await login(data.email, data.password)
     if (success) {
-      navigate("/dashboard")
+      // Role-based redirect
+      if (data.email.includes("admin")) {
+        navigate("/admin/dashboard")
+      } else if (data.email.includes("supervisor")) {
+        navigate("/supervisor/dashboard")
+      } else if (data.email.includes("intern")) {
+        navigate("/intern/dashboard")
+      } else {
+        navigate("/dashboard")
+      }
     }
   }
 
