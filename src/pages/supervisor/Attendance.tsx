@@ -19,10 +19,11 @@ interface AttendanceRecord {
 }
 
 const mockAttendance: AttendanceRecord[] = [
+  // Today's records (2024-08-26)
   {
     id: "1",
     internName: "Emma Dubois",
-    date: "2024-03-25",
+    date: "2024-08-26",
     checkIn: "08:30",
     checkOut: "17:00",
     status: "present",
@@ -32,7 +33,7 @@ const mockAttendance: AttendanceRecord[] = [
   {
     id: "2",
     internName: "Thomas Martin",
-    date: "2024-03-25",
+    date: "2024-08-26",
     checkIn: "09:15",
     checkOut: "17:00",
     status: "late",
@@ -41,8 +42,8 @@ const mockAttendance: AttendanceRecord[] = [
   },
   {
     id: "3",
-    internName: "Marie Dubois",
-    date: "2024-03-25",
+    internName: "Marie Bernard",
+    date: "2024-08-26",
     checkIn: null,
     checkOut: null,
     status: "absent",
@@ -51,8 +52,49 @@ const mockAttendance: AttendanceRecord[] = [
   },
   {
     id: "4",
+    internName: "Lucas Petit",
+    date: "2024-08-26",
+    checkIn: "08:45",
+    checkOut: "12:30",
+    status: "half_day",
+    workHours: 3.75,
+    notes: "Formation externe l'après-midi"
+  },
+  {
+    id: "5",
+    internName: "Sophie Moreau",
+    date: "2024-08-26",
+    checkIn: "08:30",
+    checkOut: "17:30",
+    status: "present",
+    workHours: 9,
+    notes: "Heures supplémentaires pour finir projet"
+  },
+  {
+    id: "6",
+    internName: "Antoine Rousseau",
+    date: "2024-08-26",
+    checkIn: "08:00",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 9,
+    notes: ""
+  },
+  {
+    id: "7",
+    internName: "Clara Durand",
+    date: "2024-08-26",
+    checkIn: "09:30",
+    checkOut: "17:00",
+    status: "late",
+    workHours: 7.5,
+    notes: "Problème de transport"
+  },
+  // Yesterday's records (2024-08-25)
+  {
+    id: "8",
     internName: "Emma Dubois",
-    date: "2024-03-24",
+    date: "2024-08-25",
     checkIn: "08:45",
     checkOut: "17:15",
     status: "present",
@@ -60,9 +102,9 @@ const mockAttendance: AttendanceRecord[] = [
     notes: ""
   },
   {
-    id: "5",
+    id: "9",
     internName: "Thomas Martin",
-    date: "2024-03-24",
+    date: "2024-08-25",
     checkIn: "08:30",
     checkOut: "12:30",
     status: "half_day",
@@ -70,9 +112,191 @@ const mockAttendance: AttendanceRecord[] = [
     notes: "Rendez-vous médical après-midi"
   },
   {
-    id: "6",
-    internName: "Marie Dubois",
-    date: "2024-03-24",
+    id: "10",
+    internName: "Marie Bernard",
+    date: "2024-08-25",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "11",
+    internName: "Lucas Petit",
+    date: "2024-08-25",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "12",
+    internName: "Sophie Moreau",
+    date: "2024-08-25",
+    checkIn: "08:15",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.75,
+    notes: ""
+  },
+  {
+    id: "13",
+    internName: "Antoine Rousseau",
+    date: "2024-08-25",
+    checkIn: "09:00",
+    checkOut: "17:00",
+    status: "late",
+    workHours: 8,
+    notes: "Embouteillages"
+  },
+  {
+    id: "14",
+    internName: "Clara Durand",
+    date: "2024-08-25",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  // Friday's records (2024-08-23)
+  {
+    id: "15",
+    internName: "Emma Dubois",
+    date: "2024-08-23",
+    checkIn: "08:30",
+    checkOut: "16:30",
+    status: "present",
+    workHours: 8,
+    notes: "Départ anticipé autorisé"
+  },
+  {
+    id: "16",
+    internName: "Thomas Martin",
+    date: "2024-08-23",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "17",
+    internName: "Marie Bernard",
+    date: "2024-08-23",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "18",
+    internName: "Lucas Petit",
+    date: "2024-08-23",
+    checkIn: null,
+    checkOut: null,
+    status: "absent",
+    workHours: 0,
+    notes: "Congé personnel autorisé"
+  },
+  {
+    id: "19",
+    internName: "Sophie Moreau",
+    date: "2024-08-23",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "20",
+    internName: "Antoine Rousseau",
+    date: "2024-08-23",
+    checkIn: "08:45",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.25,
+    notes: ""
+  },
+  {
+    id: "21",
+    internName: "Clara Durand",
+    date: "2024-08-23",
+    checkIn: "09:45",
+    checkOut: "17:00",
+    status: "late",
+    workHours: 7.25,
+    notes: "Panne de réveil"
+  },
+  // Thursday's records (2024-08-22)
+  {
+    id: "22",
+    internName: "Emma Dubois",
+    date: "2024-08-22",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "23",
+    internName: "Thomas Martin",
+    date: "2024-08-22",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "24",
+    internName: "Marie Bernard",
+    date: "2024-08-22",
+    checkIn: "08:15",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.75,
+    notes: ""
+  },
+  {
+    id: "25",
+    internName: "Lucas Petit",
+    date: "2024-08-22",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "26",
+    internName: "Sophie Moreau",
+    date: "2024-08-22",
+    checkIn: "08:30",
+    checkOut: "13:00",
+    status: "half_day",
+    workHours: 4.5,
+    notes: "Formation externe après-midi"
+  },
+  {
+    id: "27",
+    internName: "Antoine Rousseau",
+    date: "2024-08-22",
+    checkIn: "08:30",
+    checkOut: "17:00",
+    status: "present",
+    workHours: 8.5,
+    notes: ""
+  },
+  {
+    id: "28",
+    internName: "Clara Durand",
+    date: "2024-08-22",
     checkIn: "08:30",
     checkOut: "17:00",
     status: "present",
