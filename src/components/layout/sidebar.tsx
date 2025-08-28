@@ -1,6 +1,8 @@
+import { useState } from "react"
 import { Link, useLocation } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { 
   LayoutDashboard, 
   Users, 
@@ -12,13 +14,17 @@ import {
   UserCheck,
   Building,
   GraduationCap,
-  Target
+  Target,
+  Menu
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useIsMobile } from "@/hooks/use-mobile"
 
 export function Sidebar() {
   const { user } = useAuth()
   const location = useLocation()
+  const isMobile = useIsMobile()
+  const [open, setOpen] = useState(false)
 
   const getRoleBasedNavigation = () => {
     switch (user?.role) {
@@ -60,8 +66,8 @@ export function Sidebar() {
 
   const navigation = getRoleBasedNavigation()
 
-  return (
-    <div className="flex h-full w-64 flex-col bg-card border-r border-border">
+  const SidebarContent = () => (
+    <div className="flex h-full flex-col bg-card border-r border-border">
       <nav className="flex-1 space-y-2 p-4 pt-6">
         {navigation.map((item) => {
           const Icon = item.icon
@@ -77,6 +83,7 @@ export function Sidebar() {
                   ? "bg-primary/10 text-primary hover:bg-primary/15 border border-primary/20" 
                   : "hover:bg-accent"
               )}
+              onClick={() => isMobile && setOpen(false)}
               asChild
             >
               <Link to={item.href}>
@@ -98,6 +105,32 @@ export function Sidebar() {
           </span>
         </div>
       </div>
+    </div>
+  )
+
+  if (isMobile) {
+    return (
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="md:hidden fixed top-4 left-4 z-40 bg-background/80 backdrop-blur-sm border"
+          >
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Menu</span>
+          </Button>
+        </SheetTrigger>
+        <SheetContent side="left" className="p-0 w-64">
+          <SidebarContent />
+        </SheetContent>
+      </Sheet>
+    )
+  }
+
+  return (
+    <div className="hidden md:flex w-64">
+      <SidebarContent />
     </div>
   )
 }

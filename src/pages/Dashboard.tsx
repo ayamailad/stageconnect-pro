@@ -47,13 +47,13 @@ export default function Dashboard() {
   }
 
   const renderCandidateDashboard = () => (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
-        <p className="text-muted-foreground">Suivez le statut de votre candidature</p>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Suivez le statut de votre candidature</p>
       </div>
 
-      <div className="grid md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
         <Card className="card-gradient">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -108,19 +108,19 @@ export default function Dashboard() {
   )
 
   const renderInternDashboard = () => (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
-        <p className="text-muted-foreground">Voici votre progression de stage</p>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Voici votre progression de stage</p>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg">Mon Stage</CardTitle>
-            <CardDescription>Informations générales</CardDescription>
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-base sm:text-lg">Mon Stage</CardTitle>
+            <CardDescription className="text-xs sm:text-sm">Informations générales</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3">
             <div>
               <p className="text-sm text-muted-foreground">Thème</p>
               <p className="font-medium">{mockStats.intern.currentTheme}</p>
@@ -133,13 +133,13 @@ export default function Dashboard() {
         </Card>
 
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Target className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Mes Tâches
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-primary">
                 {mockStats.intern.tasksCompleted}/{mockStats.intern.totalTasks}
@@ -159,13 +159,13 @@ export default function Dashboard() {
         </Card>
 
         <Card className="card-gradient">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-lg flex items-center gap-2">
-              <Calendar className="h-5 w-5 text-primary" />
+          <CardHeader className="pb-2 sm:pb-3">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               Présence
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-2 sm:space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-2xl font-bold text-primary">
                 {mockStats.intern.attendanceRate}%
@@ -184,13 +184,13 @@ export default function Dashboard() {
   )
 
   const renderSupervisorDashboard = () => (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Tableau de Bord Superviseur</h1>
-        <p className="text-muted-foreground">Gérez vos stagiaires et leurs projets</p>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Superviseur</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Gérez vos stagiaires et leurs projets</p>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
           { title: "Stagiaires", value: mockStats.supervisor.totalInterns, icon: Users, color: "text-blue-600" },
           { title: "Thèmes Actifs", value: mockStats.supervisor.activeThemes, icon: BookOpen, color: "text-green-600" },
@@ -200,13 +200,13 @@ export default function Dashboard() {
           const Icon = stat.icon
           return (
             <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold text-primary">{stat.value}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
                   </div>
-                  <Icon className={`h-8 w-8 ${stat.color}`} />
+                  <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
                 </div>
               </CardContent>
             </Card>
@@ -217,13 +217,13 @@ export default function Dashboard() {
   )
 
   const renderAdminDashboard = () => (
-    <div className="space-y-6 animate-fade-in">
+    <div className="space-y-4 sm:space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-3xl font-bold mb-2">Tableau de Bord Administrateur</h1>
-        <p className="text-muted-foreground">Vue d'ensemble de la plateforme</p>
+        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Administrateur</h1>
+        <p className="text-muted-foreground text-sm sm:text-base">Vue d'ensemble de la plateforme</p>
       </div>
 
-      <div className="grid md:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {[
           { title: "Utilisateurs Total", value: mockStats.admin.totalUsers, icon: Users, color: "text-blue-600" },
           { title: "Candidatures en Attente", value: mockStats.admin.pendingApplications, icon: FileText, color: "text-warning" },
@@ -233,13 +233,13 @@ export default function Dashboard() {
           const Icon = stat.icon
           return (
             <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
-              <CardContent className="p-6">
+              <CardContent className="p-4 sm:p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-2xl font-bold text-primary">{stat.value}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
+                    <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
                   </div>
-                  <Icon className={`h-8 w-8 ${stat.color}`} />
+                  <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
                 </div>
               </CardContent>
             </Card>
