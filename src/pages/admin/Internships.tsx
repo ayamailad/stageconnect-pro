@@ -112,17 +112,18 @@ export default function Internships() {
   const departments = [...new Set(internships.map(internship => internship.department))]
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">Stages</h1>
-          <p className="text-muted-foreground">Gérez les offres de stage et les affectations</p>
+          <h1 className="text-2xl sm:text-3xl font-bold">Stages</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Gérez les offres de stage et les affectations</p>
         </div>
         <Dialog>
           <DialogTrigger asChild>
-            <Button>
+            <Button className="w-full sm:w-auto">
               <Plus className="mr-2 h-4 w-4" />
-              Créer un stage
+              <span className="hidden sm:inline">Créer un stage</span>
+              <span className="sm:hidden">Créer</span>
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-2xl">
@@ -203,41 +204,41 @@ export default function Internships() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Stages</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Total Stages</CardTitle>
+            <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{internships.length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{internships.length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Disponibles</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Disponibles</CardTitle>
+            <Calendar className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{internships.filter(i => i.status === 'available').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{internships.filter(i => i.status === 'available').length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">En cours</CardTitle>
-            <User className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">En cours</CardTitle>
+            <User className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{internships.filter(i => i.status === 'in_progress').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{internships.filter(i => i.status === 'in_progress').length}</div>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Terminés</CardTitle>
-            <GraduationCap className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-xs sm:text-sm font-medium">Terminés</CardTitle>
+            <GraduationCap className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{internships.filter(i => i.status === 'completed').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{internships.filter(i => i.status === 'completed').length}</div>
           </CardContent>
         </Card>
       </div>
@@ -249,7 +250,7 @@ export default function Internships() {
           <CardDescription>Gérez les offres de stage et les affectations</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
+          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
@@ -284,60 +285,62 @@ export default function Internships() {
             </Select>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Titre</TableHead>
-                <TableHead>Département</TableHead>
-                <TableHead>Superviseur</TableHead>
-                <TableHead>Stagiaire</TableHead>
-                <TableHead>Période</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredInternships.map((internship) => (
-                <TableRow key={internship.id}>
-                  <TableCell className="font-medium">{internship.title}</TableCell>
-                  <TableCell>{internship.department}</TableCell>
-                  <TableCell>{internship.supervisor}</TableCell>
-                  <TableCell>
-                    {internship.intern ? (
-                      <span className="font-medium">{internship.intern}</span>
-                    ) : (
-                      <span className="text-muted-foreground italic">Non assigné</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="text-sm">
-                      <div>{new Date(internship.startDate).toLocaleDateString('fr-FR')}</div>
-                      <div className="text-muted-foreground">
-                        au {new Date(internship.endDate).toLocaleDateString('fr-FR')}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(internship.status)}>
-                      {getStatusLabel(internship.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      {internship.status === 'available' && (
-                        <Button variant="outline" size="sm">
-                          <User className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </TableCell>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[180px]">Titre</TableHead>
+                  <TableHead className="min-w-[120px] hidden lg:table-cell">Département</TableHead>
+                  <TableHead className="min-w-[120px] hidden sm:table-cell">Superviseur</TableHead>
+                  <TableHead className="min-w-[120px]">Stagiaire</TableHead>
+                  <TableHead className="min-w-[140px] hidden md:table-cell">Période</TableHead>
+                  <TableHead className="min-w-[100px]">Statut</TableHead>
+                  <TableHead className="min-w-[120px]">Actions</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredInternships.map((internship) => (
+                  <TableRow key={internship.id}>
+                    <TableCell className="font-medium">{internship.title}</TableCell>
+                    <TableCell className="hidden lg:table-cell">{internship.department}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{internship.supervisor}</TableCell>
+                    <TableCell>
+                      {internship.intern ? (
+                        <span className="font-medium">{internship.intern}</span>
+                      ) : (
+                        <span className="text-muted-foreground italic">Non assigné</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="hidden md:table-cell">
+                      <div className="text-sm">
+                        <div>{new Date(internship.startDate).toLocaleDateString('fr-FR')}</div>
+                        <div className="text-muted-foreground">
+                          au {new Date(internship.endDate).toLocaleDateString('fr-FR')}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(internship.status)}>
+                        {getStatusLabel(internship.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1 sm:space-x-2">
+                        <Button variant="outline" size="sm">
+                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                        </Button>
+                        {internship.status === 'available' && (
+                          <Button variant="outline" size="sm">
+                            <User className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>
