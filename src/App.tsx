@@ -22,6 +22,7 @@ import InternProfile from "./pages/intern/Profile";
 import Users from "./pages/admin/Users";
 import Applications from "./pages/admin/Applications";
 import Internships from "./pages/admin/Internships";
+import Application from "./pages/Application";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -133,6 +134,16 @@ const App = () => (
               element={
                 <DashboardLayout>
                   <Internships />
+                </DashboardLayout>
+              } 
+            />
+            
+            {/* Candidate Routes */}
+            <Route 
+              path="/application" 
+              element={
+                <DashboardLayout>
+                  <Application />
                 </DashboardLayout>
               } 
             />
