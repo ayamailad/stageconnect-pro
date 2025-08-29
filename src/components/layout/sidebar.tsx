@@ -110,26 +110,27 @@ export function Sidebar() {
 
   if (isMobile) {
     return (
-      <Sheet open={open} onOpenChange={setOpen}>
-        <SheetTrigger asChild>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden fixed top-4 left-4 z-40 bg-background/80 backdrop-blur-sm border"
-          >
-            <Menu className="h-5 w-5" />
-            <span className="sr-only">Toggle Menu</span>
-          </Button>
-        </SheetTrigger>
-        <SheetContent side="left" className="p-0 w-64">
-          <SidebarContent />
-        </SheetContent>
-      </Sheet>
+      <>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden fixed top-4 left-4 z-50 bg-background/90 backdrop-blur-sm border shadow-lg hover:bg-accent"
+          onClick={() => setOpen(true)}
+        >
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Toggle Menu</span>
+        </Button>
+        <Sheet open={open} onOpenChange={setOpen}>
+          <SheetContent side="left" className="p-0 w-72 max-w-[85vw]">
+            <SidebarContent />
+          </SheetContent>
+        </Sheet>
+      </>
     )
   }
 
   return (
-    <div className="hidden md:flex w-64">
+    <div className="hidden md:flex w-64 min-w-64 flex-shrink-0">
       <SidebarContent />
     </div>
   )
