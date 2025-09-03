@@ -20,6 +20,8 @@ import { PositionStep } from "./steps/position-step"
 import { DocumentsStep } from "./steps/documents-step"
 import { ReviewStep } from "./steps/review-step"
 import { toast } from "@/hooks/use-toast"
+import { demoAccounts, type DemoAccountKey } from "@/lib/demo-data"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 const applicationSchema = z.object({
   // Personal Information
@@ -72,6 +74,16 @@ export function MultiStepApplicationForm() {
   })
 
   const progress = (currentStep / steps.length) * 100
+
+  const loadDemoData = (demoKey: DemoAccountKey) => {
+    const demoData = demoAccounts[demoKey]
+    form.reset(demoData)
+    setCurrentStep(1)
+    toast({
+      title: "Données de démonstration chargées",
+      description: `Profil de ${demoData.firstName} ${demoData.lastName} chargé avec succès.`,
+    })
+  }
 
   const nextStep = async () => {
     const currentFields = getCurrentStepFields()
@@ -193,6 +205,34 @@ export function MultiStepApplicationForm() {
           })}
         </div>
       </div>
+
+      {/* Demo Accounts Selector */}
+      <Card className="bg-muted/50">
+        <CardHeader className="pb-3">
+          <CardTitle className="text-sm">Comptes de démonstration</CardTitle>
+          <CardDescription className="text-xs">
+            Chargez rapidement des données d'exemple pour tester le formulaire
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Select onValueChange={(value) => loadDemoData(value as DemoAccountKey)}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sélectionner un profil de démonstration..." />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="etudiant_informatique">
+                Marie Dubois - Développeur Web Junior
+              </SelectItem>
+              <SelectItem value="etudiant_marketing">
+                Pierre Martin - Assistant Marketing Digital
+              </SelectItem>
+              <SelectItem value="etudiant_design">
+                Sophie Leroy - Designer UX/UI Stagiaire
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </CardContent>
+      </Card>
 
       {/* Current Step */}
       <Card>
