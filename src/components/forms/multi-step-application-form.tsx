@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
+import { Form } from "@/components/ui/form"
 import { 
   ChevronLeft, 
   ChevronRight, 
@@ -244,10 +245,11 @@ export function MultiStepApplicationForm() {
           <CardDescription>{currentStepData?.description}</CardDescription>
         </CardHeader>
         <CardContent>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {renderStepContent()}
-            
-            {/* Navigation Buttons */}
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {renderStepContent()}
+              
+              {/* Navigation Buttons */}
             <div className="flex items-center justify-between pt-4">
               <Button
                 type="button"
@@ -289,7 +291,8 @@ export function MultiStepApplicationForm() {
                 </Button>
               )}
             </div>
-          </form>
+            </form>
+          </Form>
         </CardContent>
       </Card>
     </div>
