@@ -1,5 +1,7 @@
 import { useState, useEffect, createContext, useContext, ReactNode } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { supabase } from "@/integrations/supabase/client"
+import type { User as SupabaseUser, Session } from '@supabase/supabase-js'
 
 interface User {
   id: string
@@ -30,34 +32,59 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast()
   const [user, setUser] = useState<User | null>(null)
+  const [session, setSession] = useState<Session | null>(null)
   const [loading, setLoading] = useState(true)
 
   const login = async (email: string, password: string) => {
     setLoading(true)
     try {
-      // Mock login - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      const mockUser: User = {
-        id: "1",
-        name: "John Doe",
-        email: email,
-        role: email.includes("admin") ? "admin" : 
-              email.includes("supervisor") ? "supervisor" :
-              email.includes("intern") ? "intern" : "candidate"
-      }
-      
-      setUser(mockUser)
-      localStorage.setItem("auth_user", JSON.stringify(mockUser))
-      toast({
-        title: "Connexion réussie",
-        description: "Bienvenue sur InternFlow !",
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
       })
-      return true
+
+      if (error) {
+        let errorMessage = "Email ou mot de passe incorrect"
+        
+        switch (error.message) {
+          case "Invalid login credentials":
+            errorMessage = "Email ou mot de passe incorrect"
+            break
+          case "Email not confirmed":
+            errorMessage = "Veuillez confirmer votre email avant de vous connecter"
+            break
+          case "Too many requests":
+            errorMessage = "Trop de tentatives de connexion. Veuillez réessayer plus tard"
+            break
+          case "signInWithPassword disabled":
+            errorMessage = "La connexion par mot de passe est désactivée"
+            break
+          default:
+            errorMessage = error.message
+        }
+
+        toast({
+          title: "Erreur de connexion",
+          description: errorMessage,
+          variant: "destructive"
+        })
+        return false
+      }
+
+      if (data.user) {
+        toast({
+          title: "Connexion réussie",
+          description: "Bienvenue sur InternFlow !",
+        })
+        return true
+      }
+
+      return false
     } catch (error) {
+      console.error('Login error:', error)
       toast({
         title: "Erreur de connexion",
-        description: "Email ou mot de passe incorrect",
+        description: "Une erreur inattendue s'est produite",
         variant: "destructive"
       })
       return false
@@ -69,27 +96,70 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const register = async (userData: RegisterData) => {
     setLoading(true)
     try {
-      // Mock registration - replace with actual API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      const redirectUrl = `${window.location.origin}/dashboard`
       
-      const newUser: User = {
-        id: Math.random().toString(),
-        name: userData.name,
+      const { data, error } = await supabase.auth.signUp({
         email: userData.email,
-        role: "candidate"
-      }
-      
-      setUser(newUser)
-      localStorage.setItem("auth_user", JSON.stringify(newUser))
-      toast({
-        title: "Inscription réussie",
-        description: "Votre compte a été créé avec succès !",
+        password: userData.password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            first_name: userData.name.split(' ')[0],
+            last_name: userData.name.split(' ').slice(1).join(' ') || '',
+            role: 'candidate',
+            phone: userData.phone,
+            cin: userData.cin
+          }
+        }
       })
-      return true
+
+      if (error) {
+        let errorMessage = "Une erreur est survenue lors de l'inscription"
+        
+        switch (error.message) {
+          case "User already registered":
+            errorMessage = "Un compte existe déjà avec cet email"
+            break
+          case "Password should be at least 6 characters":
+            errorMessage = "Le mot de passe doit contenir au moins 6 caractères"
+            break
+          case "Unable to validate email address: invalid format":
+            errorMessage = "Format d'email invalide"
+            break
+          case "Password should contain at least one character of each: abcdefghijklmnopqrstuvwxyz, ABCDEFGHIJKLMNOPQRSTUVWXYZ, 0123456789":
+            errorMessage = "Le mot de passe doit contenir au moins une minuscule, une majuscule et un chiffre"
+            break
+          case "Signup is disabled":
+            errorMessage = "L'inscription est actuellement désactivée"
+            break
+          default:
+            errorMessage = error.message
+        }
+
+        toast({
+          title: "Erreur d'inscription",
+          description: errorMessage,
+          variant: "destructive"
+        })
+        return false
+      }
+
+      if (data.user) {
+        toast({
+          title: "Inscription réussie",
+          description: data.user.email_confirmed_at ? 
+            "Votre compte a été créé avec succès !" :
+            "Vérifiez votre email pour confirmer votre compte",
+        })
+        return true
+      }
+
+      return false
     } catch (error) {
+      console.error('Registration error:', error)
       toast({
         title: "Erreur d'inscription",
-        description: "Une erreur est survenue lors de l'inscription",
+        description: "Une erreur inattendue s'est produite",
         variant: "destructive"
       })
       return false
@@ -98,26 +168,103 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("auth_user")
-    toast({
-      title: "Déconnexion",
-      description: "Vous avez été déconnecté avec succès",
-    })
+  const logout = async () => {
+    try {
+      const { error } = await supabase.auth.signOut()
+      
+      if (error) {
+        console.error('Logout error:', error)
+        toast({
+          title: "Erreur de déconnexion",
+          description: "Une erreur s'est produite lors de la déconnexion",
+          variant: "destructive"
+        })
+        return
+      }
+
+      toast({
+        title: "Déconnexion",
+        description: "Vous avez été déconnecté avec succès",
+      })
+    } catch (error) {
+      console.error('Logout error:', error)
+      toast({
+        title: "Erreur de déconnexion",
+        description: "Une erreur inattendue s'est produite",
+        variant: "destructive"
+      })
+    }
   }
 
-  // Check for stored user on mount
-  useEffect(() => {
-    const stored = localStorage.getItem("auth_user")
-    if (stored) {
-      try {
-        setUser(JSON.parse(stored))
-      } catch (error) {
-        localStorage.removeItem("auth_user")
+  // Helper function to convert Supabase user to our User type
+  const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null> => {
+    try {
+      // Fetch profile data from our profiles table
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', supabaseUser.id)
+        .single()
+
+      if (error || !profile) {
+        console.error('Error fetching profile:', error)
+        return {
+          id: supabaseUser.id,
+          name: supabaseUser.email?.split('@')[0] || 'Utilisateur',
+          email: supabaseUser.email || '',
+          role: 'candidate'
+        }
       }
+
+      return {
+        id: supabaseUser.id,
+        name: `${profile.first_name} ${profile.last_name}`.trim() || profile.email.split('@')[0],
+        email: profile.email,
+        role: ['candidate', 'intern', 'supervisor', 'admin'].includes(profile.role) ? 
+          profile.role as 'candidate' | 'intern' | 'supervisor' | 'admin' : 'candidate',
+        avatar: supabaseUser.user_metadata?.avatar_url
+      }
+    } catch (error) {
+      console.error('Error converting user:', error)
+      return null
     }
-    setLoading(false)
+  }
+
+  // Set up auth state listener
+  useEffect(() => {
+    // Set up auth state listener FIRST
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session)
+        
+        if (session?.user) {
+          // Defer profile fetching to avoid blocking auth state changes
+          setTimeout(async () => {
+            const convertedUser = await convertSupabaseUser(session.user)
+            setUser(convertedUser)
+          }, 0)
+        } else {
+          setUser(null)
+        }
+        
+        setLoading(false)
+      }
+    )
+
+    // THEN check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session)
+      if (session?.user) {
+        setTimeout(async () => {
+          const convertedUser = await convertSupabaseUser(session.user)
+          setUser(convertedUser)
+        }, 0)
+      } else {
+        setLoading(false)
+      }
+    })
+
+    return () => subscription.unsubscribe()
   }, [])
 
   const value = { user, login, register, logout, loading }
