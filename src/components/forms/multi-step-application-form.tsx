@@ -13,14 +13,7 @@ import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 
 const applicationSchema = z.object({
-  candidateName: z.string().min(2, "Nom complet requis").max(100, "Nom trop long"),
-  candidateEmail: z.string().email("Email invalide").max(255, "Email trop long"),
-  candidatePhone: z.string().optional(),
-  position: z.string().min(2, "Poste souhaité requis").max(100, "Poste trop long"),
-  department: z.string().min(2, "Département requis").max(100, "Département trop long"),
   durationMonths: z.string().min(1, "Durée du stage requise"),
-  experience: z.string().optional(),
-  motivation: z.string().optional(),
   cv: z.instanceof(File, { message: "CV requis" }).optional(),
   coverLetter: z.instanceof(File, { message: "Lettre de motivation requise" }).optional(),
   internshipAgreement: z.instanceof(File, { message: "Convention de stage requise" }).optional(),
@@ -106,14 +99,7 @@ export function MultiStepApplicationForm() {
     resolver: zodResolver(applicationSchema),
     mode: "onChange",
     defaultValues: {
-      candidateName: "",
-      candidateEmail: "",
-      candidatePhone: "",
-      position: "",
-      department: "",
       durationMonths: "",
-      experience: "",
-      motivation: "",
     }
   })
 
@@ -174,14 +160,14 @@ export function MultiStepApplicationForm() {
       const { error: dbError } = await supabase
         .from('applications')
         .insert({
-          candidate_name: data.candidateName,
-          candidate_email: data.candidateEmail,
-          candidate_phone: data.candidatePhone || null,
-          position: data.position,
-          department: data.department,
+          candidate_name: 'Anonymous',
+          candidate_email: 'anonymous@example.com',
+          candidate_phone: null,
+          position: 'Stage',
+          department: 'General',
           duration_months: parseInt(data.durationMonths),
-          experience: data.experience || null,
-          motivation: data.motivation || null,
+          experience: null,
+          motivation: null,
           cv_file_path: cvPath,
           cover_letter_path: coverLetterPath,
           internship_agreement_path: internshipAgreementPath,
@@ -235,142 +221,28 @@ export function MultiStepApplicationForm() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-                {/* Personal Information */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="candidateName"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Nom complet</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Votre nom complet" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                  
-                  <FormField
-                    control={form.control}
-                    name="candidateEmail"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Email</FormLabel>
-                        <FormControl>
-                          <Input type="email" placeholder="votre.email@exemple.com" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="candidatePhone"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Téléphone (optionnel)</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Votre numéro de téléphone" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="durationMonths"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Durée du stage</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Sélectionnez la durée" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="1">1 mois</SelectItem>
-                            <SelectItem value="2">2 mois</SelectItem>
-                            <SelectItem value="3">3 mois</SelectItem>
-                            <SelectItem value="4">4 mois</SelectItem>
-                            <SelectItem value="5">5 mois</SelectItem>
-                            <SelectItem value="6">6 mois</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <FormField
-                    control={form.control}
-                    name="position"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Poste souhaité</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Développeur Frontend" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-
-                  <FormField
-                    control={form.control}
-                    name="department"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Département</FormLabel>
-                        <FormControl>
-                          <Input placeholder="Ex: Informatique" {...field} />
-                        </FormControl>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* Experience */}
+                {/* Duration Selection */}
                 <FormField
                   control={form.control}
-                  name="experience"
+                  name="durationMonths"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Expérience professionnelle (optionnel)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Décrivez brièvement votre expérience professionnelle..."
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* Motivation */}
-                <FormField
-                  control={form.control}
-                  name="motivation"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Motivation (optionnel)</FormLabel>
-                      <FormControl>
-                        <Textarea 
-                          placeholder="Pourquoi souhaitez-vous faire ce stage chez nous ?"
-                          className="min-h-[100px]"
-                          {...field} 
-                        />
-                      </FormControl>
+                      <FormLabel>Durée du stage</FormLabel>
+                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Sélectionnez la durée" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="1">1 mois</SelectItem>
+                          <SelectItem value="2">2 mois</SelectItem>
+                          <SelectItem value="3">3 mois</SelectItem>
+                          <SelectItem value="4">4 mois</SelectItem>
+                          <SelectItem value="5">5 mois</SelectItem>
+                          <SelectItem value="6">6 mois</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
