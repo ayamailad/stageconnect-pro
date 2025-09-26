@@ -45,18 +45,33 @@ export default function Login() {
   const onSubmit = async (data: LoginForm) => {
     const success = await login(data.email, data.password)
     if (success) {
-      // Role-based redirect
-      if (data.email.includes("admin")) {
-        navigate("/admin/dashboard")
-      } else if (data.email.includes("supervisor")) {
-        navigate("/supervisor/dashboard")
-      } else if (data.email.includes("intern")) {
-        navigate("/intern/dashboard")
-      } else {
-        navigate("/dashboard")
-      }
+      // The redirection will be handled by the auth state change
+      // in the useEffect below once the user role is loaded
     }
   }
+
+  // Handle role-based redirection after user is loaded
+  const { user } = useAuth()
+  useEffect(() => {
+    if (user && !loading) {
+      switch (user.role) {
+        case 'admin':
+          navigate("/admin/dashboard")
+          break
+        case 'supervisor':
+          navigate("/supervisor/dashboard")
+          break
+        case 'intern':
+          navigate("/intern/dashboard")
+          break
+        case 'candidate':
+          navigate("/candidate/dashboard")
+          break
+        default:
+          navigate("/dashboard")
+      }
+    }
+  }, [user, loading, navigate])
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-warm">
       <div className="w-full max-w-md animate-fade-in">

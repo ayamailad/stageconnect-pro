@@ -8,7 +8,11 @@ interface DashboardLayoutProps {
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
+  
+  if (loading) {
+    return <div className="h-screen flex items-center justify-center">Loading...</div>
+  }
   
   if (!user) {
     return <Navigate to="/login" replace />
