@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form"
 import { Loader2, Mail, Lock } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { supabase } from "@/integrations/supabase/client"
 
 const loginSchema = z.object({
   email: z.string().email("Email invalide"),
@@ -29,6 +30,17 @@ export default function Login() {
       password: ""
     }
   })
+  
+  // One-time seeding of test users via Edge Function
+  useEffect(() => {
+    const key = 'testUsersSeeded'
+    if (localStorage.getItem(key)) return
+    supabase.functions.invoke('create-test-users').then(() => {
+      localStorage.setItem(key, '1')
+    }).catch(() => {
+      // ignore seeding errors in UI
+    })
+  }, [])
 
   const onSubmit = async (data: LoginForm) => {
     const success = await login(data.email, data.password)
@@ -45,7 +57,6 @@ export default function Login() {
       }
     }
   }
-
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-gradient-warm">
       <div className="w-full max-w-md animate-fade-in">
@@ -145,10 +156,11 @@ export default function Login() {
             <div className="mt-6 p-4 bg-muted/50 rounded-lg">
               <h4 className="text-sm font-medium mb-2">Comptes de démonstration :</h4>
               <div className="space-y-1 text-xs text-muted-foreground">
-                <p>Admin: admin@demo.com</p>
-                <p>Superviseur: supervisor@demo.com</p>
-                <p>Stagiaire: intern@demo.com</p>
-                <p>Mot de passe: demo123</p>
+                <p>Admins: admin1@test.com, admin2@test.com</p>
+                <p>Superviseurs: supervisor1@test.com</p>
+                <p>Stagiaires: intern1@test.com</p>
+                <p>Candidats: candidate1@test.com</p>
+                <p>Mot de passe: password123</p>
               </div>
             </div>
           </CardContent>
