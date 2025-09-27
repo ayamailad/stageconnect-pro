@@ -5,65 +5,60 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Users as UsersIcon, UserPlus, Search, Edit, Trash2 } from "lucide-react"
-
-interface User {
-  id: string
-  name: string
-  email: string
-  role: 'admin' | 'supervisor' | 'intern' | 'candidate'
-  status: 'active' | 'inactive' | 'pending'
-  createdAt: string
-}
-
-const mockUsers: User[] = [
-  {
-    id: "1",
-    name: "Sophie Martin",
-    email: "sophie.martin@company.com",
-    role: "admin",
-    status: "active",
-    createdAt: "2024-01-15"
-  },
-  {
-    id: "2", 
-    name: "Jean Dupont",
-    email: "jean.dupont@company.com",
-    role: "supervisor",
-    status: "active",
-    createdAt: "2024-02-20"
-  },
-  {
-    id: "3",
-    name: "Marie Dubois", 
-    email: "marie.dubois@student.com",
-    role: "intern",
-    status: "active",
-    createdAt: "2024-03-10"
-  },
-  {
-    id: "4",
-    name: "Pierre Bernard",
-    email: "pierre.bernard@student.com", 
-    role: "candidate",
-    status: "pending",
-    createdAt: "2024-03-25"
-  }
-]
+import { Users as UsersIcon, UserPlus, Search, Edit, Trash2, Loader2 } from "lucide-react"
+import { useUsers } from "@/hooks/use-users"
+import { UserForm } from "@/components/forms/user-form"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import type { User } from "@/hooks/use-users"
 
 export default function Users() {
-  const [users] = useState<User[]>(mockUsers)
+  const { users, loading, createUser, updateUser, deleteUser } = useUsers()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedRole, setSelectedRole] = useState<string>("all")
+  const [showCreateDialog, setShowCreateDialog] = useState(false)
+  const [editingUser, setEditingUser] = useState<User | null>(null)
+  const [deletingUser, setDeletingUser] = useState<User | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    const fullName = `${user.first_name} ${user.last_name}`.toLowerCase()
+    const matchesSearch = fullName.includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesRole = selectedRole === "all" || user.role === selectedRole
     return matchesSearch && matchesRole
   })
+
+  const handleCreateUser = async (userData: any) => {
+    const success = await createUser(userData)
+    if (success) {
+      setShowCreateDialog(false)
+    }
+    return success
+  }
+
+  const handleUpdateUser = async (userData: any) => {
+    if (!editingUser) return false
+    const success = await updateUser(editingUser.id, userData)
+    if (success) {
+      setEditingUser(null)
+    }
+    return success
+  }
+
+  const handleDeleteUser = async () => {
+    if (!deletingUser) return
+    
+    try {
+      setIsDeleting(true)
+      const success = await deleteUser(deletingUser.id)
+      if (success) {
+        setDeletingUser(null)
+      }
+    } finally {
+      setIsDeleting(false)
+    }
+  }
 
   const getRoleBadgeVariant = (role: string) => {
     switch (role) {
@@ -71,15 +66,6 @@ export default function Users() {
       case 'supervisor': return 'default'
       case 'intern': return 'secondary'
       case 'candidate': return 'outline'
-      default: return 'secondary'
-    }
-  }
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active': return 'default'
-      case 'inactive': return 'secondary'
-      case 'pending': return 'outline'
       default: return 'secondary'
     }
   }
@@ -94,13 +80,17 @@ export default function Users() {
     }
   }
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active': return 'Actif'
-      case 'inactive': return 'Inactif'
-      case 'pending': return 'En attente'
-      default: return status
-    }
+  const getRoleStats = (role: string) => {
+    return users.filter(u => u.role === role).length
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span className="ml-2">Chargement des utilisateurs...</span>
+      </div>
+    )
   }
 
   return (
@@ -110,7 +100,8 @@ export default function Users() {
           <h1 className="text-2xl sm:text-3xl font-bold">Utilisateurs</h1>
           <p className="text-muted-foreground text-sm sm:text-base">Gérez les utilisateurs du système</p>
         </div>
-        <Dialog>
+        
+        <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
               <UserPlus className="mr-2 h-4 w-4" />
@@ -118,38 +109,17 @@ export default function Users() {
               <span className="sm:hidden">Ajouter</span>
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="max-w-md">
             <DialogHeader>
               <DialogTitle>Ajouter un utilisateur</DialogTitle>
               <DialogDescription>
                 Créez un nouveau compte utilisateur
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="name">Nom complet</Label>
-                <Input id="name" placeholder="Nom et prénom" />
-              </div>
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" placeholder="email@example.com" />
-              </div>
-              <div>
-                <Label htmlFor="role">Rôle</Label>
-                <Select>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un rôle" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Administrateur</SelectItem>
-                    <SelectItem value="supervisor">Superviseur</SelectItem>
-                    <SelectItem value="intern">Stagiaire</SelectItem>
-                    <SelectItem value="candidate">Candidat</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button className="w-full">Créer l'utilisateur</Button>
-            </div>
+            <UserForm 
+              onSubmit={handleCreateUser} 
+              onCancel={() => setShowCreateDialog(false)}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -171,7 +141,7 @@ export default function Users() {
             <UsersIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{users.filter(u => u.role === 'admin').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{getRoleStats('admin')}</div>
           </CardContent>
         </Card>
         <Card>
@@ -180,7 +150,7 @@ export default function Users() {
             <UsersIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{users.filter(u => u.role === 'supervisor').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{getRoleStats('supervisor')}</div>
           </CardContent>
         </Card>
         <Card>
@@ -189,7 +159,7 @@ export default function Users() {
             <UsersIcon className="h-3 w-3 sm:h-4 sm:w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-lg sm:text-2xl font-bold">{users.filter(u => u.role === 'intern').length}</div>
+            <div className="text-lg sm:text-2xl font-bold">{getRoleStats('intern')}</div>
           </CardContent>
         </Card>
       </div>
@@ -232,44 +202,101 @@ export default function Users() {
                   <TableHead className="min-w-[150px]">Nom</TableHead>
                   <TableHead className="min-w-[200px]">Email</TableHead>
                   <TableHead className="min-w-[120px]">Rôle</TableHead>
-                  <TableHead className="min-w-[100px]">Statut</TableHead>
+                  <TableHead className="min-w-[120px] hidden sm:table-cell">Téléphone</TableHead>
+                  <TableHead className="min-w-[120px] hidden sm:table-cell">Département</TableHead>
                   <TableHead className="min-w-[120px] hidden sm:table-cell">Date de création</TableHead>
                   <TableHead className="min-w-[120px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell className="break-all">{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={getRoleBadgeVariant(user.role)}>
-                        {getRoleLabel(user.role)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(user.status)}>
-                        {getStatusLabel(user.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{new Date(user.createdAt).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>
-                      <div className="flex space-x-1 sm:space-x-2">
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm">
-                          <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                        </Button>
-                      </div>
+                {filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || selectedRole !== "all" ? 
+                        "Aucun utilisateur ne correspond aux critères de recherche" : 
+                        "Aucun utilisateur trouvé"
+                      }
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">
+                        {`${user.first_name} ${user.last_name}`}
+                      </TableCell>
+                      <TableCell className="break-all">{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={getRoleBadgeVariant(user.role)}>
+                          {getRoleLabel(user.role)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {user.phone || '-'}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {user.department || '-'}
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {new Date(user.created_at).toLocaleDateString('fr-FR')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-1 sm:space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setEditingUser(user)}
+                          >
+                            <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => setDeletingUser(user)}
+                          >
+                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4 text-destructive" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>
         </CardContent>
       </Card>
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editingUser} onOpenChange={(open) => !open && setEditingUser(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Modifier l'utilisateur</DialogTitle>
+            <DialogDescription>
+              Modifiez les informations de l'utilisateur
+            </DialogDescription>
+          </DialogHeader>
+          {editingUser && (
+            <UserForm 
+              user={editingUser}
+              onSubmit={handleUpdateUser} 
+              onCancel={() => setEditingUser(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmationDialog
+        open={!!deletingUser}
+        onOpenChange={(open) => !open && setDeletingUser(null)}
+        title="Confirmer la suppression"
+        description={`Êtes-vous sûr de vouloir supprimer l'utilisateur "${deletingUser?.first_name} ${deletingUser?.last_name}" ? Cette action est irréversible.`}
+        confirmText="Supprimer"
+        cancelText="Annuler"
+        onConfirm={handleDeleteUser}
+        isDestructive={true}
+        isLoading={isDeleting}
+      />
     </div>
   )
 }
