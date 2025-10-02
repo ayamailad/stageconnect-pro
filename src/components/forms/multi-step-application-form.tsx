@@ -12,11 +12,22 @@ import { Upload, FileText, Cloud } from "lucide-react"
 import { toast } from "@/hooks/use-toast"
 import { supabase } from "@/integrations/supabase/client"
 
+const MAX_FILE_SIZE = 3 * 1024 * 1024 // 3MB in bytes
+
 const applicationSchema = z.object({
   durationMonths: z.string().min(1, "Durée du stage requise"),
-  cv: z.instanceof(File, { message: "CV requis" }).optional(),
-  coverLetter: z.instanceof(File, { message: "Lettre de motivation requise" }).optional(),
-  internshipAgreement: z.instanceof(File, { message: "Convention de stage requise" }).optional(),
+  cv: z.instanceof(File, { message: "CV requis" })
+    .refine((file) => file.type === 'application/pdf', "Seuls les fichiers PDF sont acceptés")
+    .refine((file) => file.size <= MAX_FILE_SIZE, "La taille du fichier ne doit pas dépasser 3MB")
+    .optional(),
+  coverLetter: z.instanceof(File, { message: "Lettre de motivation requise" })
+    .refine((file) => file.type === 'application/pdf', "Seuls les fichiers PDF sont acceptés")
+    .refine((file) => file.size <= MAX_FILE_SIZE, "La taille du fichier ne doit pas dépasser 3MB")
+    .optional(),
+  internshipAgreement: z.instanceof(File, { message: "Convention de stage requise" })
+    .refine((file) => file.type === 'application/pdf', "Seuls les fichiers PDF sont acceptés")
+    .refine((file) => file.size <= MAX_FILE_SIZE, "La taille du fichier ne doit pas dépasser 3MB")
+    .optional(),
 })
 
 type ApplicationFormData = z.infer<typeof applicationSchema>
@@ -103,8 +114,22 @@ export function MultiStepApplicationForm() {
     }
   })
 
-  const uploadFile = async (file: File, bucket: string, path: string): Promise<string | null> => {
+  const sanitizeFilename = (filename: string): string => {
+    // Get file extension
+    const ext = filename.substring(filename.lastIndexOf('.'))
+    // Remove extension, then sanitize filename
+    const nameWithoutExt = filename.substring(0, filename.lastIndexOf('.'))
+    // Replace all non-alphanumeric characters (except hyphens and underscores) with underscores
+    const sanitized = nameWithoutExt.replace(/[^a-zA-Z0-9_-]/g, '_')
+    return sanitized + ext
+  }
+
+  const uploadFile = async (file: File, bucket: string, prefix: string): Promise<string | null> => {
     try {
+      const timestamp = Date.now()
+      const sanitizedFilename = sanitizeFilename(file.name)
+      const path = `${prefix}_${timestamp}_${sanitizedFilename}`
+      
       const { data, error } = await supabase.storage
         .from(bucket)
         .upload(path, file, {
@@ -133,24 +158,21 @@ export function MultiStepApplicationForm() {
       let internshipAgreementPath = null
 
       if (data.cv) {
-        const timestamp = Date.now()
-        cvPath = await uploadFile(data.cv, 'applications', `cv_${timestamp}_${data.cv.name}`)
+        cvPath = await uploadFile(data.cv, 'applications', 'cv')
         if (!cvPath) {
           throw new Error("Échec de l'upload du CV")
         }
       }
 
       if (data.coverLetter) {
-        const timestamp = Date.now()
-        coverLetterPath = await uploadFile(data.coverLetter, 'applications', `cover_letter_${timestamp}_${data.coverLetter.name}`)
+        coverLetterPath = await uploadFile(data.coverLetter, 'applications', 'cover_letter')
         if (!coverLetterPath) {
           throw new Error("Échec de l'upload de la lettre de motivation")
         }
       }
 
       if (data.internshipAgreement) {
-        const timestamp = Date.now()
-        internshipAgreementPath = await uploadFile(data.internshipAgreement, 'applications', `internship_agreement_${timestamp}_${data.internshipAgreement.name}`)
+        internshipAgreementPath = await uploadFile(data.internshipAgreement, 'applications', 'internship_agreement')
         if (!internshipAgreementPath) {
           throw new Error("Échec de l'upload de la convention de stage")
         }
@@ -259,7 +281,7 @@ export function MultiStepApplicationForm() {
                         <FormControl>
                           <FileUploadArea
                             onFileSelect={onChange}
-                            accept=".pdf,.doc,.docx"
+                            accept=".pdf"
                             label="cv"
                             file={value}
                           />
@@ -278,7 +300,7 @@ export function MultiStepApplicationForm() {
                         <FormControl>
                           <FileUploadArea
                             onFileSelect={onChange}
-                            accept=".pdf,.doc,.docx"
+                            accept=".pdf"
                             label="cover-letter"
                             file={value}
                           />
@@ -297,7 +319,7 @@ export function MultiStepApplicationForm() {
                         <FormControl>
                           <FileUploadArea
                             onFileSelect={onChange}
-                            accept=".pdf,.doc,.docx"
+                            accept=".pdf"
                             label="internship-agreement"
                             file={value}
                           />
