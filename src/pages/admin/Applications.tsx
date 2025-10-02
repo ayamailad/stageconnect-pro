@@ -19,7 +19,6 @@ export default function Applications() {
     loading, 
     approveApplication, 
     rejectApplication, 
-    scheduleInterview,
     deleteApplication,
     getApplicationStats 
   } = useApplications()
@@ -53,12 +52,6 @@ export default function Applications() {
     setActionLoading(null)
   }
 
-  // Handle schedule interview action
-  const handleScheduleInterview = async (applicationId: string) => {
-    setActionLoading(applicationId)
-    await scheduleInterview(applicationId)
-    setActionLoading(null)
-  }
 
   // Handle delete action
   const handleDelete = async (applicationId: string) => {
@@ -318,20 +311,6 @@ export default function Applications() {
                                     <Check className="h-4 w-4 mr-2" />
                                   )}
                                   Approuver
-                                </Button>
-                                <Button 
-                                  variant="outline" 
-                                  size="sm" 
-                                  className="flex-1"
-                                  disabled={selectedApplication.status !== 'pending' || actionLoading === selectedApplication.id}
-                                  onClick={() => handleScheduleInterview(selectedApplication.id)}
-                                >
-                                  {actionLoading === selectedApplication.id ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                                  ) : (
-                                    <Eye className="h-4 w-4 mr-2" />
-                                  )}
-                                  Programmer entretien
                                 </Button>
                                 <ConfirmationDialog
                                   title="Confirmer le rejet"

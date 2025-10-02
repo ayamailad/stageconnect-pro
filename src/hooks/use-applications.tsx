@@ -129,19 +129,101 @@ export function useApplications() {
     }
   }
 
-  // Approve application
+  // Approve application and change role to intern
   const approveApplication = async (applicationId: string): Promise<boolean> => {
-    return updateApplicationStatus(applicationId, 'approved')
+    try {
+      // Get current user profile to set reviewed_by
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Utilisateur non authentifié")
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+
+      if (!profile) throw new Error("Profil utilisateur non trouvé")
+
+      // Get the application to find the candidate
+      const { data: application, error: appError } = await supabase
+        .from('applications')
+        .select('candidate_email')
+        .eq('id', applicationId)
+        .single()
+
+      if (appError) throw appError
+
+      // Update application status
+      const { error: updateError } = await supabase
+        .from('applications')
+        .update({
+          status: 'approved',
+          reviewed_at: new Date().toISOString(),
+          reviewed_by: profile.id
+        })
+        .eq('id', applicationId)
+
+      if (updateError) throw updateError
+
+      // Change candidate role to intern
+      const { error: roleError } = await supabase
+        .from('profiles')
+        .update({ role: 'intern' })
+        .eq('email', application.candidate_email)
+
+      if (roleError) {
+        console.error('Error updating role:', roleError)
+        // Don't throw error, just log it
+      }
+
+      toast({
+        title: "Succès",
+        description: "Candidature approuvée et candidat promu stagiaire",
+      })
+
+      // Refresh applications list
+      await fetchApplications()
+      return true
+    } catch (error: any) {
+      console.error('Error approving application:', error)
+      
+      toast({
+        title: "Erreur",
+        description: "Impossible d'approuver la candidature",
+        variant: "destructive",
+      })
+      return false
+    }
   }
 
-  // Reject application
+  // Reject application - delete files, profile, auth, send email
   const rejectApplication = async (applicationId: string): Promise<boolean> => {
-    return updateApplicationStatus(applicationId, 'rejected')
-  }
+    try {
+      // Call edge function to handle rejection
+      const { data, error } = await supabase.functions.invoke('reject-application', {
+        body: { applicationId }
+      })
 
-  // Schedule interview
-  const scheduleInterview = async (applicationId: string): Promise<boolean> => {
-    return updateApplicationStatus(applicationId, 'interview')
+      if (error) throw error
+
+      toast({
+        title: "Succès",
+        description: "Candidature rejetée et candidat notifié par email",
+      })
+
+      // Refresh applications list
+      await fetchApplications()
+      return true
+    } catch (error: any) {
+      console.error('Error rejecting application:', error)
+      
+      toast({
+        title: "Erreur",
+        description: error.message || "Impossible de rejeter la candidature",
+        variant: "destructive",
+      })
+      return false
+    }
   }
 
   // Delete application (for admin)
@@ -202,7 +284,6 @@ export function useApplications() {
     loading,
     approveApplication,
     rejectApplication,
-    scheduleInterview,
     deleteApplication,
     refreshApplications: fetchApplications,
     getApplicationStats
