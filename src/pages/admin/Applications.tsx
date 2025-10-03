@@ -6,12 +6,13 @@ import { Badge } from "@/components/ui/badge"
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Search, Eye, Check, X, Clock, Trash2 } from "lucide-react"
+import { FileText, Search, Eye, Check, X, Clock, Trash2, Download } from "lucide-react"
 import { Label } from "@/components/ui/label"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { useApplications, type Application } from "@/hooks/use-applications"
 import { useToast } from "@/hooks/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { supabase } from "@/integrations/supabase/client"
 
 export default function Applications() {
   const { 
@@ -27,7 +28,9 @@ export default function Applications() {
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
-  const [actionLoading, setActionLoading] = useState<string | null>(null)
+  const [approveLoading, setApproveLoading] = useState<string | null>(null)
+  const [rejectLoading, setRejectLoading] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
 
   const filteredApplications = applications.filter(app => {
     const matchesSearch = app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -40,24 +43,53 @@ export default function Applications() {
 
   // Handle approve action
   const handleApprove = async (applicationId: string) => {
-    setActionLoading(applicationId)
+    setApproveLoading(applicationId)
     await approveApplication(applicationId)
-    setActionLoading(null)
+    setApproveLoading(null)
   }
 
   // Handle reject action
   const handleReject = async (applicationId: string) => {
-    setActionLoading(applicationId)
+    setRejectLoading(applicationId)
     await rejectApplication(applicationId)
-    setActionLoading(null)
+    setRejectLoading(null)
   }
-
 
   // Handle delete action
   const handleDelete = async (applicationId: string) => {
-    setActionLoading(applicationId)
+    setDeleteLoading(applicationId)
     await deleteApplication(applicationId)
-    setActionLoading(null)
+    setDeleteLoading(null)
+  }
+
+  // Handle file preview
+  const handlePreviewFile = async (filePath: string | undefined, fileName: string) => {
+    if (!filePath) {
+      toast({
+        title: "Fichier non disponible",
+        description: `Le fichier ${fileName} n'a pas été téléchargé.`,
+        variant: "destructive",
+      })
+      return
+    }
+
+    try {
+      const { data } = await supabase.storage
+        .from('applications')
+        .createSignedUrl(filePath, 60) // URL valid for 60 seconds
+
+      if (data?.signedUrl) {
+        window.open(data.signedUrl, '_blank')
+      } else {
+        throw new Error("Impossible de générer l'URL")
+      }
+    } catch (error) {
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ouvrir le fichier",
+        variant: "destructive",
+      })
+    }
   }
 
   const getStatusBadgeVariant = (status: string) => {
@@ -298,14 +330,49 @@ export default function Applications() {
                                 <Label>Motivation</Label>
                                 <p className="text-sm mt-1">{selectedApplication.motivation}</p>
                               </div>
+                              <div>
+                                <Label>Documents</Label>
+                                <div className="flex flex-wrap gap-2 mt-2">
+                                  {selectedApplication.cv_file_path && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handlePreviewFile(selectedApplication.cv_file_path, 'CV')}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      CV
+                                    </Button>
+                                  )}
+                                  {selectedApplication.cover_letter_path && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handlePreviewFile(selectedApplication.cover_letter_path, 'Lettre de motivation')}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Lettre de motivation
+                                    </Button>
+                                  )}
+                                  {selectedApplication.internship_agreement_path && (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handlePreviewFile(selectedApplication.internship_agreement_path, 'Convention de stage')}
+                                    >
+                                      <Download className="h-4 w-4 mr-2" />
+                                      Convention de stage
+                                    </Button>
+                                  )}
+                                </div>
+                              </div>
                               <div className="flex gap-2 pt-4">
                                 <Button 
                                   size="sm" 
                                   className="flex-1"
-                                  disabled={selectedApplication.status !== 'pending' || actionLoading === selectedApplication.id}
+                                  disabled={selectedApplication.status !== 'pending' || approveLoading === selectedApplication.id}
                                   onClick={() => handleApprove(selectedApplication.id)}
                                 >
-                                  {actionLoading === selectedApplication.id ? (
+                                  {approveLoading === selectedApplication.id ? (
                                     <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                                   ) : (
                                     <Check className="h-4 w-4 mr-2" />
@@ -322,9 +389,9 @@ export default function Applications() {
                                       variant="destructive" 
                                       size="sm" 
                                       className="flex-1"
-                                      disabled={selectedApplication.status !== 'pending' || actionLoading === selectedApplication.id}
+                                      disabled={selectedApplication.status !== 'pending' || rejectLoading === selectedApplication.id}
                                     >
-                                      {actionLoading === selectedApplication.id ? (
+                                      {rejectLoading === selectedApplication.id ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                                       ) : (
                                         <X className="h-4 w-4 mr-2" />
@@ -349,9 +416,9 @@ export default function Applications() {
                               <Button 
                                 variant="outline" 
                                 size="sm"
-                                disabled={actionLoading === application.id}
+                                disabled={deleteLoading === application.id}
                               >
-                                {actionLoading === application.id ? (
+                                {deleteLoading === application.id ? (
                                   <div className="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
                                 ) : (
                                   <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />

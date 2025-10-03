@@ -166,10 +166,14 @@ export function useApplications() {
       if (updateError) throw updateError
 
       // Change candidate role to intern using user_id
-      const { error: roleError } = await supabase
+      console.log('Updating role for user_id:', application.user_id)
+      const { data: roleData, error: roleError } = await supabase
         .from('profiles')
         .update({ role: 'intern' })
         .eq('user_id', application.user_id)
+        .select()
+      
+      console.log('Role update result:', roleData, roleError)
 
       if (roleError) {
         console.error('Error updating role:', roleError)
