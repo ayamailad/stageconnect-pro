@@ -28,10 +28,10 @@ serve(async (req: Request): Promise<Response> => {
     
     const { applicationId }: RejectApplicationRequest = await req.json();
 
-    // 1. Get application details
+    // 1. Get application details including user_id
     const { data: application, error: appError } = await supabaseAdmin
       .from("applications")
-      .select("candidate_name, candidate_email, cv_file_path, cover_letter_path, internship_agreement_path")
+      .select("user_id, candidate_name, candidate_email, cv_file_path, cover_letter_path, internship_agreement_path")
       .eq("id", applicationId)
       .single();
 
@@ -55,14 +55,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 3. Get user profile to find user_id
-    const { data: profile, error: profileError } = await supabaseAdmin
-      .from("profiles")
-      .select("user_id")
-      .eq("email", application.candidate_email)
-      .maybeSingle();
-
-    // 4. Delete application first
+    // 3. Delete application first
     const { error: deleteAppError } = await supabaseAdmin
       .from("applications")
       .delete()
@@ -70,11 +63,11 @@ serve(async (req: Request): Promise<Response> => {
 
     if (deleteAppError) throw new Error(`Failed to delete application: ${deleteAppError.message}`);
 
-    // 5. Delete user auth and profile (if exists)
-    if (profile?.user_id) {
+    // 4. Delete user auth and profile (if user_id exists)
+    if (application.user_id) {
       // Delete from auth.users (this will cascade to profiles)
       const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(
-        profile.user_id
+        application.user_id
       );
 
       if (authDeleteError) {
@@ -83,7 +76,7 @@ serve(async (req: Request): Promise<Response> => {
       }
     }
 
-    // 6. Send rejection email if Resend is configured
+    // 5. Send rejection email if Resend is configured
     if (resendApiKey) {
       const resend = new Resend(resendApiKey);
       

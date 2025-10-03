@@ -144,14 +144,14 @@ export function useApplications() {
 
       if (!profile) throw new Error("Profil utilisateur non trouvé")
 
-      // Get the application to find the candidate
+      // Get the application to find the candidate user_id
       const { data: application, error: appError } = await supabase
         .from('applications')
-        .select('candidate_email')
+        .select('user_id')
         .eq('id', applicationId)
         .single()
 
-      if (appError) throw appError
+      if (appError || !application?.user_id) throw new Error("Candidature non trouvée")
 
       // Update application status
       const { error: updateError } = await supabase
@@ -165,15 +165,15 @@ export function useApplications() {
 
       if (updateError) throw updateError
 
-      // Change candidate role to intern
+      // Change candidate role to intern using user_id
       const { error: roleError } = await supabase
         .from('profiles')
         .update({ role: 'intern' })
-        .eq('email', application.candidate_email)
+        .eq('user_id', application.user_id)
 
       if (roleError) {
         console.error('Error updating role:', roleError)
-        // Don't throw error, just log it
+        throw new Error("Impossible de mettre à jour le rôle")
       }
 
       toast({
@@ -189,7 +189,7 @@ export function useApplications() {
       
       toast({
         title: "Erreur",
-        description: "Impossible d'approuver la candidature",
+        description: error.message || "Impossible d'approuver la candidature",
         variant: "destructive",
       })
       return false

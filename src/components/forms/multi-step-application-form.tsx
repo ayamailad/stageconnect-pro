@@ -152,6 +152,23 @@ export function MultiStepApplicationForm() {
   const onSubmit = async (data: ApplicationFormData) => {
     setIsSubmitting(true)
     try {
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) {
+        throw new Error("Vous devez être connecté pour soumettre une candidature")
+      }
+
+      // Get user profile
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .single()
+
+      if (profileError || !profile) {
+        throw new Error("Impossible de récupérer votre profil utilisateur")
+      }
+
       // Upload files first
       let cvPath = null
       let coverLetterPath = null
@@ -182,11 +199,12 @@ export function MultiStepApplicationForm() {
       const { error: dbError } = await supabase
         .from('applications')
         .insert({
-          candidate_name: 'Anonymous',
-          candidate_email: 'anonymous@example.com',
-          candidate_phone: null,
+          user_id: user.id,
+          candidate_name: `${profile.first_name} ${profile.last_name}`,
+          candidate_email: profile.email,
+          candidate_phone: profile.phone,
           position: 'Stage',
-          department: 'General',
+          department: profile.department || 'General',
           duration_months: parseInt(data.durationMonths),
           experience: null,
           motivation: null,
