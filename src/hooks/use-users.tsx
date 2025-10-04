@@ -71,12 +71,17 @@ export function useUsers() {
   // Create new user
   const createUser = async (userData: CreateUserData): Promise<boolean> => {
     try {
-      // First create auth user
-      const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-        email: userData.email,
-        password: userData.password,
-        email_confirm: true,
-        user_metadata: {
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error("Non authentifié")
+      }
+
+      // Call edge function to create user
+      const { data, error } = await supabase.functions.invoke('create-user', {
+        body: {
+          email: userData.email,
+          password: userData.password,
           first_name: userData.first_name,
           last_name: userData.last_name,
           role: userData.role,
@@ -85,10 +90,9 @@ export function useUsers() {
         }
       })
 
-      if (authError) throw authError
-      if (!authData.user) throw new Error("Failed to create user")
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
-      // The profile will be created automatically by the trigger
       toast({
         title: "Succès",
         description: "Utilisateur créé avec succès",
@@ -159,10 +163,21 @@ export function useUsers() {
       const profile = users.find(u => u.id === userId)
       if (!profile) throw new Error("Utilisateur non trouvé")
 
-      // Delete the auth user (this will cascade delete the profile via trigger)
-      const { error: authError } = await supabase.auth.admin.deleteUser(profile.user_id)
+      // Get the current session
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        throw new Error("Non authentifié")
+      }
 
-      if (authError) throw authError
+      // Call edge function to delete user
+      const { data, error } = await supabase.functions.invoke('delete-user', {
+        body: {
+          user_id: profile.user_id
+        }
+      })
+
+      if (error) throw error
+      if (data?.error) throw new Error(data.error)
 
       toast({
         title: "Succès",
