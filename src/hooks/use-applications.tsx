@@ -144,14 +144,23 @@ export function useApplications() {
 
       if (!profile) throw new Error("Profil utilisateur non trouvé")
 
-      // Get the application to find the candidate user_id
+      // Get the application with all needed data
       const { data: application, error: appError } = await supabase
         .from('applications')
-        .select('user_id')
+        .select('user_id, duration_months, position, department')
         .eq('id', applicationId)
         .single()
 
       if (appError || !application?.user_id) throw new Error("Candidature non trouvée")
+
+      // Get candidate's profile id
+      const { data: candidateProfile, error: candidateError } = await supabase
+        .from('profiles')
+        .select('id')
+        .eq('user_id', application.user_id)
+        .single()
+
+      if (candidateError || !candidateProfile) throw new Error("Profil candidat non trouvé")
 
       // Update application status
       const { error: updateError } = await supabase
@@ -180,9 +189,36 @@ export function useApplications() {
         throw new Error("Impossible de mettre à jour le rôle")
       }
 
+      // Calculate dates for internship
+      const startDate = new Date()
+      startDate.setDate(startDate.getDate() + 1) // Next day
+      
+      const endDate = new Date(startDate)
+      endDate.setMonth(endDate.getMonth() + application.duration_months)
+
+      // Create internship
+      const { error: internshipError } = await supabase
+        .from('internships')
+        .insert({
+          title: application.position,
+          department: application.department,
+          intern_id: candidateProfile.id,
+          start_date: startDate.toISOString().split('T')[0],
+          end_date: endDate.toISOString().split('T')[0],
+          duration_months: application.duration_months,
+          status: 'available',
+          description: `Stage pour ${application.position}`,
+          requirements: null
+        })
+
+      if (internshipError) {
+        console.error('Error creating internship:', internshipError)
+        throw new Error("Impossible de créer le stage")
+      }
+
       toast({
         title: "Succès",
-        description: "Candidature approuvée et candidat promu stagiaire",
+        description: "Candidature approuvée, candidat promu stagiaire et stage créé",
       })
 
       // Refresh applications list
