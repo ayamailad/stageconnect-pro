@@ -200,15 +200,11 @@ export function useApplications() {
       const { error: internshipError } = await supabase
         .from('internships')
         .insert({
-          title: application.position,
-          department: application.department,
           intern_id: candidateProfile.id,
           start_date: startDate.toISOString().split('T')[0],
           end_date: endDate.toISOString().split('T')[0],
           duration_months: application.duration_months,
-          status: 'available',
-          description: `Stage pour ${application.position}`,
-          requirements: null
+          status: 'available'
         })
 
       if (internshipError) {

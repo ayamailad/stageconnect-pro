@@ -145,47 +145,35 @@ export type Database = {
       internships: {
         Row: {
           created_at: string | null
-          department: string
-          description: string
           duration_months: number
           end_date: string
           id: string
           intern_id: string | null
-          requirements: string | null
           start_date: string
           status: string
           supervisor_id: string | null
-          title: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          department: string
-          description: string
           duration_months: number
           end_date: string
           id?: string
           intern_id?: string | null
-          requirements?: string | null
           start_date: string
           status?: string
           supervisor_id?: string | null
-          title: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          department?: string
-          description?: string
           duration_months?: number
           end_date?: string
           id?: string
           intern_id?: string | null
-          requirements?: string | null
           start_date?: string
           status?: string
           supervisor_id?: string | null
-          title?: string
           updated_at?: string | null
         }
         Relationships: [

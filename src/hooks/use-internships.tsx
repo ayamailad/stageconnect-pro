@@ -4,16 +4,12 @@ import { supabase } from "@/integrations/supabase/client"
 
 export interface Internship {
   id: string
-  title: string
-  department: string
   supervisor_id: string | null
   intern_id: string | null
   start_date: string
   end_date: string
   duration_months: number
   status: 'available' | 'assigned' | 'in_progress' | 'completed'
-  description: string
-  requirements: string | null
   created_at: string
   updated_at: string
   supervisor?: {
@@ -29,27 +25,19 @@ export interface Internship {
 }
 
 export interface CreateInternshipData {
-  title: string
-  department: string
   supervisor_id: string
   start_date: string
   end_date: string
   duration_months: number
-  description: string
-  requirements?: string
 }
 
 export interface UpdateInternshipData {
-  title?: string
-  department?: string
   supervisor_id?: string
   intern_id?: string | null
   start_date?: string
   end_date?: string
   duration_months?: number
   status?: 'available' | 'assigned' | 'in_progress' | 'completed'
-  description?: string
-  requirements?: string
 }
 
 export function useInternships() {

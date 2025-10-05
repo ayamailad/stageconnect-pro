@@ -19,7 +19,6 @@ export default function Internships() {
   
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
   const [isCreateOpen, setIsCreateOpen] = useState(false)
   const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAssignOpen, setIsAssignOpen] = useState(false)
@@ -29,14 +28,10 @@ export default function Internships() {
 
   // Form state for create/edit
   const [formData, setFormData] = useState({
-    title: "",
-    department: "",
     supervisor_id: "",
     start_date: "",
     end_date: "",
-    duration_months: 3,
-    description: "",
-    requirements: ""
+    duration_months: 3
   })
 
   // Supervisors and interns
@@ -45,20 +40,15 @@ export default function Internships() {
 
   const resetForm = () => {
     setFormData({
-      title: "",
-      department: "",
       supervisor_id: "",
       start_date: "",
       end_date: "",
-      duration_months: 3,
-      description: "",
-      requirements: ""
+      duration_months: 3
     })
   }
 
   const handleCreateSubmit = async () => {
-    if (!formData.title || !formData.department || !formData.supervisor_id || 
-        !formData.start_date || !formData.end_date || !formData.description) {
+    if (!formData.supervisor_id || !formData.start_date || !formData.end_date) {
       return
     }
 
@@ -89,14 +79,10 @@ export default function Internships() {
   const handleEditClick = (internship: any) => {
     setSelectedInternship(internship.id)
     setFormData({
-      title: internship.title,
-      department: internship.department,
       supervisor_id: internship.supervisor_id || "",
       start_date: internship.start_date,
       end_date: internship.end_date,
-      duration_months: internship.duration_months,
-      description: internship.description,
-      requirements: internship.requirements || ""
+      duration_months: internship.duration_months
     })
     setIsEditOpen(true)
   }
@@ -141,12 +127,13 @@ export default function Internships() {
     const supervisorName = internship.supervisor 
       ? `${internship.supervisor.first_name} ${internship.supervisor.last_name}` 
       : ""
-    const matchesSearch = internship.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         internship.department.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         supervisorName.toLowerCase().includes(searchTerm.toLowerCase())
+    const internName = internship.intern 
+      ? `${internship.intern.first_name} ${internship.intern.last_name}` 
+      : ""
+    const matchesSearch = supervisorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         internName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = selectedStatus === "all" || internship.status === selectedStatus
-    const matchesDepartment = selectedDepartment === "all" || internship.department === selectedDepartment
-    return matchesSearch && matchesStatus && matchesDepartment
+    return matchesSearch && matchesStatus
   })
 
   const getStatusBadgeVariant = (status: string) => {
@@ -169,7 +156,7 @@ export default function Internships() {
     }
   }
 
-  const departments = [...new Set(internships.map(internship => internship.department))]
+  
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -196,24 +183,6 @@ export default function Internships() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="create-title">Titre du stage</Label>
-                  <Input 
-                    id="create-title" 
-                    placeholder="Ex: Stage Développement Web"
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="create-department">Département</Label>
-                  <Input 
-                    id="create-department" 
-                    placeholder="Ex: Informatique"
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="create-supervisor">Superviseur</Label>
                   <Select value={formData.supervisor_id} onValueChange={(value) => setFormData({ ...formData, supervisor_id: value })}>
                     <SelectTrigger>
@@ -262,26 +231,6 @@ export default function Internships() {
                   </Select>
                 </div>
               </div>
-              <div>
-                <Label htmlFor="create-description">Description</Label>
-                <Textarea 
-                  id="create-description" 
-                  placeholder="Décrivez les missions et objectifs du stage"
-                  className="min-h-[100px]"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="create-requirements">Prérequis</Label>
-                <Textarea 
-                  id="create-requirements" 
-                  placeholder="Compétences et formations requises"
-                  className="min-h-[80px]"
-                  value={formData.requirements}
-                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                />
-              </div>
               <Button 
                 className="w-full" 
                 onClick={handleCreateSubmit}
@@ -305,22 +254,6 @@ export default function Internships() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <Label htmlFor="edit-title">Titre du stage</Label>
-                  <Input 
-                    id="edit-title" 
-                    value={formData.title}
-                    onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-department">Département</Label>
-                  <Input 
-                    id="edit-department" 
-                    value={formData.department}
-                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="edit-supervisor">Superviseur</Label>
                   <Select value={formData.supervisor_id} onValueChange={(value) => setFormData({ ...formData, supervisor_id: value })}>
                     <SelectTrigger>
@@ -368,24 +301,6 @@ export default function Internships() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="edit-description">Description</Label>
-                <Textarea 
-                  id="edit-description" 
-                  className="min-h-[100px]"
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-requirements">Prérequis</Label>
-                <Textarea 
-                  id="edit-requirements" 
-                  className="min-h-[80px]"
-                  value={formData.requirements}
-                  onChange={(e) => setFormData({ ...formData, requirements: e.target.value })}
-                />
               </div>
               <Button 
                 className="w-full" 
@@ -507,26 +422,13 @@ export default function Internships() {
                 <SelectItem value="completed">Terminé</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Département" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les départements</SelectItem>
-                {departments.map(dept => (
-                  <SelectItem key={dept} value={dept}>{dept}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="min-w-[180px]">Titre</TableHead>
-                  <TableHead className="min-w-[120px] hidden lg:table-cell">Département</TableHead>
-                  <TableHead className="min-w-[120px] hidden sm:table-cell">Superviseur</TableHead>
+                  <TableHead className="min-w-[120px]">Superviseur</TableHead>
                   <TableHead className="min-w-[120px]">Stagiaire</TableHead>
                   <TableHead className="min-w-[140px] hidden md:table-cell">Période</TableHead>
                   <TableHead className="min-w-[100px]">Statut</TableHead>
@@ -536,22 +438,20 @@ export default function Internships() {
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       Chargement...
                     </TableCell>
                   </TableRow>
                 ) : filteredInternships.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8">
+                    <TableCell colSpan={5} className="text-center py-8">
                       Aucun stage trouvé
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredInternships.map((internship) => (
                     <TableRow key={internship.id}>
-                      <TableCell className="font-medium">{internship.title}</TableCell>
-                      <TableCell className="hidden lg:table-cell">{internship.department}</TableCell>
-                      <TableCell className="hidden sm:table-cell">
+                      <TableCell className="font-medium">
                         {internship.supervisor 
                           ? `${internship.supervisor.first_name} ${internship.supervisor.last_name}`
                           : <span className="text-muted-foreground italic">Non assigné</span>
