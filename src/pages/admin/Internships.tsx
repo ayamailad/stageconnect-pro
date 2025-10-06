@@ -138,11 +138,16 @@ export default function Internships() {
                     <SelectValue placeholder="Sélectionner un stage" />
                   </SelectTrigger>
                   <SelectContent>
-                    {availableInternships.map(internship => (
-                      <SelectItem key={internship.id} value={internship.id}>
-                        Stage {internship.duration_months} mois - Du {new Date(internship.start_date).toLocaleDateString('fr-FR')} au {new Date(internship.end_date).toLocaleDateString('fr-FR')}
-                      </SelectItem>
-                    ))}
+                    {availableInternships.map(internship => {
+                      const internName = internship.intern 
+                        ? `${internship.intern.first_name} ${internship.intern.last_name}`
+                        : "Non assigné";
+                      return (
+                        <SelectItem key={internship.id} value={internship.id}>
+                          {internName} - {internship.duration_months} mois
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
               </div>
