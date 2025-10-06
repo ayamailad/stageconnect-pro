@@ -152,6 +152,7 @@ export type Database = {
           start_date: string
           status: string
           supervisor_id: string | null
+          theme_id: string | null
           updated_at: string | null
         }
         Insert: {
@@ -163,6 +164,7 @@ export type Database = {
           start_date: string
           status?: string
           supervisor_id?: string | null
+          theme_id?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -174,6 +176,7 @@ export type Database = {
           start_date?: string
           status?: string
           supervisor_id?: string | null
+          theme_id?: string | null
           updated_at?: string | null
         }
         Relationships: [
@@ -189,6 +192,13 @@ export type Database = {
             columns: ["supervisor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "internships_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "themes"
             referencedColumns: ["id"]
           },
         ]
