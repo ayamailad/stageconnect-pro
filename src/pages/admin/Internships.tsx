@@ -7,120 +7,67 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { GraduationCap, Plus, Search, Edit, Calendar, User, Trash2 } from "lucide-react"
+import { GraduationCap, UserPlus, Search, Edit, Calendar, User, Eye } from "lucide-react"
 import { useInternships } from "@/hooks/use-internships"
 import { useUsers } from "@/hooks/use-users"
-import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 export default function Internships() {
-  const { internships, loading, createInternship, updateInternship, assignIntern, deleteInternship } = useInternships()
+  const { internships, loading, updateInternship } = useInternships()
   const { users } = useUsers()
   
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
-  const [isCreateOpen, setIsCreateOpen] = useState(false)
-  const [isEditOpen, setIsEditOpen] = useState(false)
   const [isAssignOpen, setIsAssignOpen] = useState(false)
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [selectedInternship, setSelectedInternship] = useState<string | null>(null)
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [isViewOpen, setIsViewOpen] = useState(false)
+  const [selectedInternship, setSelectedInternship] = useState<any>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  // Form state for create/edit
-  const [formData, setFormData] = useState({
-    supervisor_id: "",
-    start_date: "",
-    end_date: "",
-    duration_months: 3
-  })
+  // Form state for assign/edit supervisor
+  const [selectedSupervisorId, setSelectedSupervisorId] = useState("")
+  const [selectedInternshipId, setSelectedInternshipId] = useState("")
 
-  // Supervisors and interns
+  // Supervisors and available internships
   const supervisors = users.filter(u => u.role === 'supervisor')
-  const interns = users.filter(u => u.role === 'intern')
+  const availableInternships = internships.filter(i => i.status === 'available')
 
-  const resetForm = () => {
-    setFormData({
-      supervisor_id: "",
-      start_date: "",
-      end_date: "",
-      duration_months: 3
-    })
-  }
-
-  const handleCreateSubmit = async () => {
-    if (!formData.supervisor_id || !formData.start_date || !formData.end_date) {
-      return
-    }
+  const handleAssignSupervisor = async () => {
+    if (!selectedSupervisorId || !selectedInternshipId) return
 
     setIsSubmitting(true)
-    const success = await createInternship(formData)
+    const success = await updateInternship(selectedInternshipId, { supervisor_id: selectedSupervisorId })
     setIsSubmitting(false)
 
     if (success) {
-      setIsCreateOpen(false)
-      resetForm()
+      setIsAssignOpen(false)
+      setSelectedSupervisorId("")
+      setSelectedInternshipId("")
     }
   }
 
-  const handleEditSubmit = async () => {
-    if (!selectedInternship) return
+  const handleEditSupervisor = async () => {
+    if (!selectedInternship || !selectedSupervisorId) return
 
     setIsSubmitting(true)
-    const success = await updateInternship(selectedInternship, formData)
+    const success = await updateInternship(selectedInternship.id, { supervisor_id: selectedSupervisorId })
     setIsSubmitting(false)
 
     if (success) {
       setIsEditOpen(false)
       setSelectedInternship(null)
-      resetForm()
+      setSelectedSupervisorId("")
     }
   }
 
   const handleEditClick = (internship: any) => {
-    setSelectedInternship(internship.id)
-    setFormData({
-      supervisor_id: internship.supervisor_id || "",
-      start_date: internship.start_date,
-      end_date: internship.end_date,
-      duration_months: internship.duration_months
-    })
+    setSelectedInternship(internship)
+    setSelectedSupervisorId(internship.supervisor_id || "")
     setIsEditOpen(true)
   }
 
-  const handleDeleteClick = (internshipId: string) => {
-    setSelectedInternship(internshipId)
-    setDeleteDialogOpen(true)
-  }
-
-  const handleDeleteConfirm = async () => {
-    if (!selectedInternship) return
-
-    setIsSubmitting(true)
-    const success = await deleteInternship(selectedInternship)
-    setIsSubmitting(false)
-
-    if (success) {
-      setDeleteDialogOpen(false)
-      setSelectedInternship(null)
-    }
-  }
-
-  const handleAssignClick = (internshipId: string) => {
-    setSelectedInternship(internshipId)
-    setIsAssignOpen(true)
-  }
-
-  const handleAssignIntern = async (internId: string) => {
-    if (!selectedInternship) return
-
-    setIsSubmitting(true)
-    const success = await assignIntern(selectedInternship, internId)
-    setIsSubmitting(false)
-
-    if (success) {
-      setIsAssignOpen(false)
-      setSelectedInternship(null)
-    }
+  const handleViewClick = (internship: any) => {
+    setSelectedInternship(internship)
+    setIsViewOpen(true)
   }
 
   const filteredInternships = internships.filter(internship => {
@@ -165,192 +112,152 @@ export default function Internships() {
           <h1 className="text-2xl sm:text-3xl font-bold">Stages</h1>
           <p className="text-muted-foreground text-sm sm:text-base">Gérez les offres de stage et les affectations</p>
         </div>
-        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
           <DialogTrigger asChild>
             <Button className="w-full sm:w-auto">
-              <Plus className="mr-2 h-4 w-4" />
-              <span className="hidden sm:inline">Créer un stage</span>
-              <span className="sm:hidden">Créer</span>
+              <UserPlus className="mr-2 h-4 w-4" />
+              <span className="hidden sm:inline">Affecter un superviseur</span>
+              <span className="sm:hidden">Affecter</span>
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Créer une nouvelle offre de stage</DialogTitle>
-              <DialogDescription>
-                Définissez les détails du stage
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="create-supervisor">Superviseur</Label>
-                  <Select value={formData.supervisor_id} onValueChange={(value) => setFormData({ ...formData, supervisor_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un superviseur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {supervisors.map(supervisor => (
-                        <SelectItem key={supervisor.id} value={supervisor.id}>
-                          {supervisor.first_name} {supervisor.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="create-start">Date de début</Label>
-                  <Input 
-                    id="create-start" 
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="create-end">Date de fin</Label>
-                  <Input 
-                    id="create-end" 
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="create-duration">Durée (mois)</Label>
-                  <Select value={formData.duration_months.toString()} onValueChange={(value) => setFormData({ ...formData, duration_months: parseInt(value) })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 mois</SelectItem>
-                      <SelectItem value="2">2 mois</SelectItem>
-                      <SelectItem value="3">3 mois</SelectItem>
-                      <SelectItem value="6">6 mois</SelectItem>
-                      <SelectItem value="12">12 mois</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handleCreateSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Création..." : "Créer le stage"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Edit Dialog */}
-        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Modifier le stage</DialogTitle>
-              <DialogDescription>
-                Modifiez les détails du stage
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="edit-supervisor">Superviseur</Label>
-                  <Select value={formData.supervisor_id} onValueChange={(value) => setFormData({ ...formData, supervisor_id: value })}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Sélectionner un superviseur" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {supervisors.map(supervisor => (
-                        <SelectItem key={supervisor.id} value={supervisor.id}>
-                          {supervisor.first_name} {supervisor.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="edit-start">Date de début</Label>
-                  <Input 
-                    id="edit-start" 
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit-end">Date de fin</Label>
-                  <Input 
-                    id="edit-end" 
-                    type="date"
-                    value={formData.end_date}
-                    onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                  />
-                </div>
-                <div className="col-span-2">
-                  <Label htmlFor="edit-duration">Durée (mois)</Label>
-                  <Select value={formData.duration_months.toString()} onValueChange={(value) => setFormData({ ...formData, duration_months: parseInt(value) })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 mois</SelectItem>
-                      <SelectItem value="2">2 mois</SelectItem>
-                      <SelectItem value="3">3 mois</SelectItem>
-                      <SelectItem value="6">6 mois</SelectItem>
-                      <SelectItem value="12">12 mois</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <Button 
-                className="w-full" 
-                onClick={handleEditSubmit}
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Modification..." : "Modifier le stage"}
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-
-        {/* Assign Intern Dialog */}
-        <Dialog open={isAssignOpen} onOpenChange={setIsAssignOpen}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Affecter un stagiaire</DialogTitle>
+              <DialogTitle>Affecter un superviseur</DialogTitle>
               <DialogDescription>
-                Sélectionnez un stagiaire à affecter à ce stage
+                Sélectionnez un stage disponible et un superviseur
               </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
-              <Select onValueChange={handleAssignIntern} disabled={isSubmitting}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un stagiaire" />
-                </SelectTrigger>
-                <SelectContent>
-                  {interns.map(intern => (
-                    <SelectItem key={intern.id} value={intern.id}>
-                      {intern.first_name} {intern.last_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div>
+                <Label htmlFor="assign-internship">Stage disponible</Label>
+                <Select value={selectedInternshipId} onValueChange={setSelectedInternshipId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un stage" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableInternships.map(internship => (
+                      <SelectItem key={internship.id} value={internship.id}>
+                        {internship.start_date} - {internship.end_date} ({internship.duration_months} mois)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="assign-supervisor">Superviseur</Label>
+                <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un superviseur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {supervisors.map(supervisor => (
+                      <SelectItem key={supervisor.id} value={supervisor.id}>
+                        {supervisor.first_name} {supervisor.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={handleAssignSupervisor}
+                disabled={isSubmitting || !selectedSupervisorId || !selectedInternshipId}
+              >
+                {isSubmitting ? "Affectation..." : "Affecter"}
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
 
-        {/* Delete Confirmation Dialog */}
-        <ConfirmationDialog
-          open={deleteDialogOpen}
-          onOpenChange={setDeleteDialogOpen}
-          title="Supprimer le stage"
-          description="Êtes-vous sûr de vouloir supprimer ce stage ? Cette action est irréversible."
-          confirmText="Supprimer"
-          cancelText="Annuler"
-          onConfirm={handleDeleteConfirm}
-          isDestructive
-          isLoading={isSubmitting}
-        />
+        {/* Edit Supervisor Dialog */}
+        <Dialog open={isEditOpen} onOpenChange={setIsEditOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Modifier le superviseur</DialogTitle>
+              <DialogDescription>
+                Changez le superviseur affecté à ce stage
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Stage</Label>
+                <p className="text-sm text-muted-foreground">
+                  {selectedInternship?.start_date} - {selectedInternship?.end_date}
+                </p>
+              </div>
+              <div>
+                <Label htmlFor="edit-supervisor">Nouveau superviseur</Label>
+                <Select value={selectedSupervisorId} onValueChange={setSelectedSupervisorId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un superviseur" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {supervisors.map(supervisor => (
+                      <SelectItem key={supervisor.id} value={supervisor.id}>
+                        {supervisor.first_name} {supervisor.last_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button 
+                className="w-full" 
+                onClick={handleEditSupervisor}
+                disabled={isSubmitting || !selectedSupervisorId}
+              >
+                {isSubmitting ? "Modification..." : "Modifier"}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* View Dialog */}
+        <Dialog open={isViewOpen} onOpenChange={setIsViewOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Détails du stage</DialogTitle>
+              <DialogDescription>
+                Informations complètes sur le stage
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Superviseur</Label>
+                <p className="text-sm">
+                  {selectedInternship?.supervisor 
+                    ? `${selectedInternship.supervisor.first_name} ${selectedInternship.supervisor.last_name}`
+                    : "Non affecté"}
+                </p>
+              </div>
+              <div>
+                <Label>Stagiaire</Label>
+                <p className="text-sm">
+                  {selectedInternship?.intern 
+                    ? `${selectedInternship.intern.first_name} ${selectedInternship.intern.last_name}`
+                    : "Non affecté"}
+                </p>
+              </div>
+              <div>
+                <Label>Période</Label>
+                <p className="text-sm">
+                  {selectedInternship?.start_date} - {selectedInternship?.end_date}
+                </p>
+              </div>
+              <div>
+                <Label>Durée</Label>
+                <p className="text-sm">{selectedInternship?.duration_months} mois</p>
+              </div>
+              <div>
+                <Label>Statut</Label>
+                <p className="text-sm">
+                  <Badge variant={getStatusBadgeVariant(selectedInternship?.status || '')}>
+                    {getStatusLabel(selectedInternship?.status || '')}
+                  </Badge>
+                </p>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -432,7 +339,7 @@ export default function Internships() {
                   <TableHead className="min-w-[120px]">Stagiaire</TableHead>
                   <TableHead className="min-w-[140px] hidden md:table-cell">Période</TableHead>
                   <TableHead className="min-w-[100px]">Statut</TableHead>
-                  <TableHead className="min-w-[120px]">Actions</TableHead>
+                  <TableHead className="min-w-[150px]">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -488,21 +395,12 @@ export default function Internships() {
                           >
                             <Edit className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
-                          {internship.status === 'available' && (
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => handleAssignClick(internship.id)}
-                            >
-                              <User className="h-3 w-3 sm:h-4 sm:w-4" />
-                            </Button>
-                          )}
                           <Button 
                             variant="outline" 
                             size="sm"
-                            onClick={() => handleDeleteClick(internship.id)}
+                            onClick={() => handleViewClick(internship)}
                           >
-                            <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                            <Eye className="h-3 w-3 sm:h-4 sm:w-4" />
                           </Button>
                         </div>
                       </TableCell>
