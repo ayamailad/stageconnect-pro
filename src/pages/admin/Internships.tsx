@@ -35,7 +35,10 @@ export default function Internships() {
     if (!selectedSupervisorId || !selectedInternshipId) return
 
     setIsSubmitting(true)
-    const success = await updateInternship(selectedInternshipId, { supervisor_id: selectedSupervisorId })
+    const success = await updateInternship(selectedInternshipId, { 
+      supervisor_id: selectedSupervisorId,
+      status: 'assigned'
+    })
     setIsSubmitting(false)
 
     if (success) {
@@ -137,7 +140,7 @@ export default function Internships() {
                   <SelectContent>
                     {availableInternships.map(internship => (
                       <SelectItem key={internship.id} value={internship.id}>
-                        {internship.start_date} - {internship.end_date} ({internship.duration_months} mois)
+                        Stage {internship.duration_months} mois - Du {new Date(internship.start_date).toLocaleDateString('fr-FR')} au {new Date(internship.end_date).toLocaleDateString('fr-FR')}
                       </SelectItem>
                     ))}
                   </SelectContent>
