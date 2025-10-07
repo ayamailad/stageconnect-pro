@@ -8,77 +8,29 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { BookOpen, Plus, Search, Edit, Trash2, Users } from "lucide-react"
-
-interface Theme {
-  id: string
-  title: string
-  description: string
-  category: string
-  assignedInterns: number
-  totalTasks: number
-  completedTasks: number
-  status: 'active' | 'draft' | 'completed'
-  createdAt: string
-}
-
-const mockThemes: Theme[] = [
-  {
-    id: "1",
-    title: "Développement d'application mobile",
-    description: "Création d'une application mobile pour la gestion des stocks",
-    category: "Développement",
-    assignedInterns: 2,
-    totalTasks: 8,
-    completedTasks: 3,
-    status: "active",
-    createdAt: "2024-03-01"
-  },
-  {
-    id: "2", 
-    title: "Analyse de données clients",
-    description: "Étude comportementale et segmentation de la clientèle",
-    category: "Data Science",
-    assignedInterns: 1,
-    totalTasks: 5,
-    completedTasks: 5,
-    status: "completed",
-    createdAt: "2024-02-15"
-  },
-  {
-    id: "3",
-    title: "Campagne marketing digital",
-    description: "Stratégie et mise en œuvre d'une campagne sur les réseaux sociaux",
-    category: "Marketing",
-    assignedInterns: 1,
-    totalTasks: 6,
-    completedTasks: 2,
-    status: "active",
-    createdAt: "2024-03-10"
-  },
-  {
-    id: "4",
-    title: "Optimisation des processus RH",
-    description: "Digitalisation et amélioration des processus de recrutement",
-    category: "Ressources Humaines",
-    assignedInterns: 0,
-    totalTasks: 4,
-    completedTasks: 0,
-    status: "draft",
-    createdAt: "2024-03-20"
-  }
-]
+import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2 } from "lucide-react"
+import { useThemes } from "@/hooks/use-themes"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 export default function Themes() {
-  const [themes] = useState<Theme[]>(mockThemes)
+  const { themes, loading, createTheme, updateTheme, deleteTheme } = useThemes()
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [editingTheme, setEditingTheme] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    title: "",
+    department: "",
+    description: "",
+    status: "active"
+  })
 
   const filteredThemes = themes.filter(theme => {
-    const matchesSearch = theme.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         theme.description.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesCategory = selectedCategory === "all" || theme.category === selectedCategory
-    return matchesSearch && matchesCategory
+    const matchesSearch = theme.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         theme.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    const matchesDepartment = selectedDepartment === "all" || theme.department === selectedDepartment
+    return matchesSearch && matchesDepartment
   })
 
   const getStatusBadgeVariant = (status: string) => {
@@ -103,7 +55,59 @@ export default function Themes() {
     return total > 0 ? Math.round((completed / total) * 100) : 0
   }
 
-  const categories = [...new Set(themes.map(theme => theme.category))]
+  const departments = [...new Set(themes.map(theme => theme.department))]
+
+  const handleCreateTheme = async () => {
+    if (!formData.title || !formData.department) {
+      return
+    }
+
+    const success = await createTheme({
+      title: formData.title,
+      department: formData.department,
+      description: formData.description || null,
+      status: formData.status
+    })
+
+    if (success) {
+      setIsCreateDialogOpen(false)
+      setFormData({ title: "", department: "", description: "", status: "active" })
+    }
+  }
+
+  const handleEditTheme = async () => {
+    if (!editingTheme || !formData.title || !formData.department) {
+      return
+    }
+
+    const success = await updateTheme(editingTheme.id, {
+      title: formData.title,
+      department: formData.department,
+      description: formData.description || null,
+      status: formData.status
+    })
+
+    if (success) {
+      setIsEditDialogOpen(false)
+      setEditingTheme(null)
+      setFormData({ title: "", department: "", description: "", status: "active" })
+    }
+  }
+
+  const handleDeleteTheme = async (id: string) => {
+    await deleteTheme(id)
+  }
+
+  const openEditDialog = (theme: any) => {
+    setEditingTheme(theme)
+    setFormData({
+      title: theme.title || "",
+      department: theme.department || "",
+      description: theme.description || "",
+      status: theme.status || "active"
+    })
+    setIsEditDialogOpen(true)
+  }
 
   return (
     <div className="space-y-6">
@@ -112,7 +116,7 @@ export default function Themes() {
           <h1 className="text-3xl font-bold">Thèmes</h1>
           <p className="text-muted-foreground">Gérez les thèmes de stage et les projets</p>
         </div>
-        <Dialog>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -128,33 +132,118 @@ export default function Themes() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="title">Titre du thème</Label>
-                <Input id="title" placeholder="Ex: Développement d'application web" />
+                <Label htmlFor="create-title">Titre du thème</Label>
+                <Input 
+                  id="create-title" 
+                  placeholder="Ex: Développement d'application web"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
               </div>
               <div>
-                <Label htmlFor="category">Catégorie</Label>
-                <Select>
+                <Label htmlFor="create-department">Département</Label>
+                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner une catégorie" />
+                    <SelectValue placeholder="Sélectionner un département" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="development">Développement</SelectItem>
-                    <SelectItem value="marketing">Marketing</SelectItem>
-                    <SelectItem value="data">Data Science</SelectItem>
-                    <SelectItem value="rh">Ressources Humaines</SelectItem>
-                    <SelectItem value="design">Design</SelectItem>
+                    <SelectItem value="Développement">Développement</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="Data Science">Data Science</SelectItem>
+                    <SelectItem value="Ressources Humaines">Ressources Humaines</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label htmlFor="description">Description</Label>
+                <Label htmlFor="create-description">Description</Label>
                 <Textarea 
-                  id="description" 
+                  id="create-description" 
                   placeholder="Décrivez les objectifs et le contexte du thème"
                   className="min-h-[120px]"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
-              <Button className="w-full">Créer le thème</Button>
+              <div>
+                <Label htmlFor="create-status">Statut</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Actif</SelectItem>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="completed">Terminé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={handleCreateTheme}>
+                Créer le thème
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier le thème</DialogTitle>
+              <DialogDescription>
+                Modifiez les informations du thème
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="edit-title">Titre du thème</Label>
+                <Input 
+                  id="edit-title" 
+                  placeholder="Ex: Développement d'application web"
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-department">Département</Label>
+                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un département" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Développement">Développement</SelectItem>
+                    <SelectItem value="Marketing">Marketing</SelectItem>
+                    <SelectItem value="Data Science">Data Science</SelectItem>
+                    <SelectItem value="Ressources Humaines">Ressources Humaines</SelectItem>
+                    <SelectItem value="Design">Design</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit-description">Description</Label>
+                <Textarea 
+                  id="edit-description" 
+                  placeholder="Décrivez les objectifs et le contexte du thème"
+                  className="min-h-[120px]"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                />
+              </div>
+              <div>
+                <Label htmlFor="edit-status">Statut</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="active">Actif</SelectItem>
+                    <SelectItem value="draft">Brouillon</SelectItem>
+                    <SelectItem value="completed">Terminé</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <Button className="w-full" onClick={handleEditTheme}>
+                Enregistrer les modifications
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
@@ -217,83 +306,101 @@ export default function Themes() {
                 className="pl-10"
               />
             </div>
-            <Select value={selectedCategory} onValueChange={setSelectedCategory}>
+            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Catégorie" />
+                <SelectValue placeholder="Département" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Toutes les catégories</SelectItem>
-                {categories.map(category => (
-                  <SelectItem key={category} value={category}>{category}</SelectItem>
+                <SelectItem value="all">Tous les départements</SelectItem>
+                {departments.map(department => (
+                  <SelectItem key={department} value={department}>{department}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
 
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Thème</TableHead>
-                <TableHead>Catégorie</TableHead>
-                <TableHead>Stagiaires</TableHead>
-                <TableHead>Progression</TableHead>
-                <TableHead>Statut</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredThemes.map((theme) => (
-                <TableRow key={theme.id}>
-                  <TableCell>
-                    <div>
-                      <div className="font-medium">{theme.title}</div>
-                      <div className="text-sm text-muted-foreground">{theme.description}</div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline">{theme.category}</Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Users className="h-4 w-4 text-muted-foreground" />
-                      <span>{theme.assignedInterns}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium">
-                        {theme.completedTasks}/{theme.totalTasks} tâches
+          {loading ? (
+            <div className="flex justify-center items-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+          ) : filteredThemes.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">Aucun thème trouvé</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Thème</TableHead>
+                  <TableHead>Département</TableHead>
+                  <TableHead>Stagiaires</TableHead>
+                  <TableHead>Progression</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredThemes.map((theme) => (
+                  <TableRow key={theme.id}>
+                    <TableCell>
+                      <div>
+                        <div className="font-medium">{theme.title}</div>
+                        <div className="text-sm text-muted-foreground">{theme.description || "Aucune description"}</div>
                       </div>
-                      <div className="w-full bg-secondary rounded-full h-2">
-                        <div 
-                          className="bg-primary h-2 rounded-full transition-all duration-300" 
-                          style={{ width: `${getProgressPercentage(theme.completedTasks, theme.totalTasks)}%` }}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline">{theme.department}</Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Users className="h-4 w-4 text-muted-foreground" />
+                        <span>{theme.assignedInterns}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="text-sm font-medium">
+                          {theme.completedTasks}/{theme.totalTasks} tâches
+                        </div>
+                        <div className="w-full bg-secondary rounded-full h-2">
+                          <div 
+                            className="bg-primary h-2 rounded-full transition-all duration-300" 
+                            style={{ width: `${getProgressPercentage(theme.completedTasks, theme.totalTasks)}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {getProgressPercentage(theme.completedTasks, theme.totalTasks)}%
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(theme.status)}>
+                        {getStatusLabel(theme.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <ConfirmationDialog
+                          title="Supprimer le thème"
+                          description="Êtes-vous sûr de vouloir supprimer ce thème ? Cette action est irréversible."
+                          onConfirm={() => handleDeleteTheme(theme.id)}
+                          isDestructive
+                          triggerButton={
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          }
                         />
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {getProgressPercentage(theme.completedTasks, theme.totalTasks)}%
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(theme.status)}>
-                      {getStatusLabel(theme.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-2">
-                      <Button variant="outline" size="sm">
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button variant="outline" size="sm">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
     </div>
