@@ -15,22 +15,17 @@ import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 export default function Themes() {
   const { themes, loading, createTheme, updateTheme, deleteTheme } = useThemes()
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingTheme, setEditingTheme] = useState<any>(null)
   const [formData, setFormData] = useState({
-    title: "",
-    department: "",
     description: "",
     status: "active"
   })
 
   const filteredThemes = themes.filter(theme => {
-    const matchesSearch = theme.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         theme.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesDepartment = selectedDepartment === "all" || theme.department === selectedDepartment
-    return matchesSearch && matchesDepartment
+    const matchesSearch = theme.description?.toLowerCase().includes(searchTerm.toLowerCase())
+    return matchesSearch
   })
 
   const getStatusBadgeVariant = (status: string) => {
@@ -55,42 +50,36 @@ export default function Themes() {
     return total > 0 ? Math.round((completed / total) * 100) : 0
   }
 
-  const departments = [...new Set(themes.map(theme => theme.department))]
-
   const handleCreateTheme = async () => {
-    if (!formData.title || !formData.department) {
+    if (!formData.description) {
       return
     }
 
     const success = await createTheme({
-      title: formData.title,
-      department: formData.department,
-      description: formData.description || null,
+      description: formData.description,
       status: formData.status
     })
 
     if (success) {
       setIsCreateDialogOpen(false)
-      setFormData({ title: "", department: "", description: "", status: "active" })
+      setFormData({ description: "", status: "active" })
     }
   }
 
   const handleEditTheme = async () => {
-    if (!editingTheme || !formData.title || !formData.department) {
+    if (!editingTheme || !formData.description) {
       return
     }
 
     const success = await updateTheme(editingTheme.id, {
-      title: formData.title,
-      department: formData.department,
-      description: formData.description || null,
+      description: formData.description,
       status: formData.status
     })
 
     if (success) {
       setIsEditDialogOpen(false)
       setEditingTheme(null)
-      setFormData({ title: "", department: "", description: "", status: "active" })
+      setFormData({ description: "", status: "active" })
     }
   }
 
@@ -101,8 +90,6 @@ export default function Themes() {
   const openEditDialog = (theme: any) => {
     setEditingTheme(theme)
     setFormData({
-      title: theme.title || "",
-      department: theme.department || "",
       description: theme.description || "",
       status: theme.status || "active"
     })
@@ -132,37 +119,14 @@ export default function Themes() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="create-title">Titre du thème</Label>
-                <Input 
-                  id="create-title" 
-                  placeholder="Ex: Développement d'application web"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="create-department">Département</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un département" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Développement">Développement</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Data Science">Data Science</SelectItem>
-                    <SelectItem value="Ressources Humaines">Ressources Humaines</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="create-description">Description</Label>
                 <Textarea 
                   id="create-description" 
-                  placeholder="Décrivez les objectifs et le contexte du thème"
+                  placeholder="Décrivez le thème"
                   className="min-h-[120px]"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
                 />
               </div>
               <div>
@@ -195,37 +159,14 @@ export default function Themes() {
             </DialogHeader>
             <div className="space-y-4">
               <div>
-                <Label htmlFor="edit-title">Titre du thème</Label>
-                <Input 
-                  id="edit-title" 
-                  placeholder="Ex: Développement d'application web"
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                />
-              </div>
-              <div>
-                <Label htmlFor="edit-department">Département</Label>
-                <Select value={formData.department} onValueChange={(value) => setFormData({ ...formData, department: value })}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un département" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Développement">Développement</SelectItem>
-                    <SelectItem value="Marketing">Marketing</SelectItem>
-                    <SelectItem value="Data Science">Data Science</SelectItem>
-                    <SelectItem value="Ressources Humaines">Ressources Humaines</SelectItem>
-                    <SelectItem value="Design">Design</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
                 <Label htmlFor="edit-description">Description</Label>
                 <Textarea 
                   id="edit-description" 
-                  placeholder="Décrivez les objectifs et le contexte du thème"
+                  placeholder="Décrivez le thème"
                   className="min-h-[120px]"
                   value={formData.description}
                   onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  required
                 />
               </div>
               <div>
@@ -300,23 +241,12 @@ export default function Themes() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par titre ou description..."
+                placeholder="Rechercher par description..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
-              <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder="Département" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tous les départements</SelectItem>
-                {departments.map(department => (
-                  <SelectItem key={department} value={department}>{department}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
           </div>
 
           {loading ? (
@@ -331,8 +261,7 @@ export default function Themes() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Thème</TableHead>
-                  <TableHead>Département</TableHead>
+                  <TableHead>Description</TableHead>
                   <TableHead>Stagiaires</TableHead>
                   <TableHead>Progression</TableHead>
                   <TableHead>Statut</TableHead>
@@ -343,13 +272,7 @@ export default function Themes() {
                 {filteredThemes.map((theme) => (
                   <TableRow key={theme.id}>
                     <TableCell>
-                      <div>
-                        <div className="font-medium">{theme.title}</div>
-                        <div className="text-sm text-muted-foreground">{theme.description || "Aucune description"}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{theme.department}</Badge>
+                      <div className="font-medium">{theme.description}</div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">

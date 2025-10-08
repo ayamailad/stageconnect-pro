@@ -2,13 +2,14 @@ import { useState, useEffect } from "react"
 import { supabase } from "@/integrations/supabase/client"
 import { useToast } from "@/hooks/use-toast"
 import { useAuth } from "@/hooks/use-auth"
-import type { Tables, TablesInsert, TablesUpdate } from "@/integrations/supabase/types"
 
-type Theme = Tables<"themes">
-type ThemeInsert = TablesInsert<"themes">
-type ThemeUpdate = TablesUpdate<"themes">
-
-interface ThemeWithStats extends Theme {
+interface ThemeWithStats {
+  id: string
+  description: string
+  supervisor_id: string
+  status: string
+  created_at: string
+  updated_at: string
   assignedInterns: number
   totalTasks: number
   completedTasks: number
@@ -129,7 +130,7 @@ export const useThemes = () => {
   }
 
   // Create theme
-  const createTheme = async (themeData: Omit<ThemeInsert, "supervisor_id">) => {
+  const createTheme = async (themeData: { description: string; status?: string }) => {
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) {
@@ -144,7 +145,8 @@ export const useThemes = () => {
       const { error } = await supabase
         .from("themes")
         .insert({
-          ...themeData,
+          description: themeData.description,
+          status: themeData.status || "active",
           supervisor_id: profileId
         })
 
@@ -169,7 +171,7 @@ export const useThemes = () => {
   }
 
   // Update theme
-  const updateTheme = async (id: string, updates: ThemeUpdate) => {
+  const updateTheme = async (id: string, updates: { description?: string; status?: string }) => {
     try {
       const { error } = await supabase
         .from("themes")

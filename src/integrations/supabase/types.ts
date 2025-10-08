@@ -305,32 +305,26 @@ export type Database = {
       themes: {
         Row: {
           created_at: string | null
-          department: string
-          description: string | null
+          description: string
           id: string
           status: string
           supervisor_id: string
-          title: string
           updated_at: string | null
         }
         Insert: {
           created_at?: string | null
-          department: string
-          description?: string | null
+          description: string
           id?: string
           status?: string
           supervisor_id: string
-          title: string
           updated_at?: string | null
         }
         Update: {
           created_at?: string | null
-          department?: string
-          description?: string | null
+          description?: string
           id?: string
           status?: string
           supervisor_id?: string
-          title?: string
           updated_at?: string | null
         }
         Relationships: [
