@@ -199,46 +199,39 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // Helper function to convert Supabase user to our User type
   const convertSupabaseUser = async (supabaseUser: SupabaseUser): Promise<User | null> => {
     try {
-      // Prefer role from user metadata to avoid relying on profiles (which may be blocked by RLS)
-      const meta = (supabaseUser.user_metadata ?? {}) as Record<string, any>
-      const allowedRoles = ['candidate', 'intern', 'supervisor', 'admin'] as const
-      const metaRole = typeof meta.role === 'string' && (allowedRoles as readonly string[]).includes(meta.role)
-        ? (meta.role as (typeof allowedRoles)[number])
-        : undefined
-
-      const nameFromMeta = [meta.first_name, meta.last_name].filter(Boolean).join(' ')
-      const baseUser: User = {
-        id: supabaseUser.id,
-        name: nameFromMeta || supabaseUser.email?.split('@')[0] || 'Utilisateur',
-        email: supabaseUser.email || '',
-        role: metaRole ?? 'candidate',
-        avatar: meta.avatar_url
-      }
-
-      if (metaRole) {
-        // If role is present in metadata, return immediately (no DB roundtrip needed)
-        return baseUser
-      }
-
-      // Fallback: try to fetch profile to enrich data (role, name)
+      // Try to fetch profile from database first for most accurate data
       const { data: profile, error } = await supabase
         .from('profiles')
         .select('*')
         .eq('user_id', supabaseUser.id)
         .single()
 
-      if (error || !profile) {
-        // If profile fetch fails (e.g., due to RLS), return base user with safe defaults
-        return baseUser
+      if (!error && profile) {
+        const allowedRoles = ['candidate', 'intern', 'supervisor', 'admin'] as const
+        return {
+          id: supabaseUser.id,
+          name: `${profile.first_name} ${profile.last_name}`.trim() || profile.email.split('@')[0],
+          email: profile.email,
+          role: (allowedRoles as readonly string[]).includes(profile.role)
+            ? (profile.role as (typeof allowedRoles)[number])
+            : 'candidate',
+          avatar: supabaseUser.user_metadata?.avatar_url
+        }
       }
 
+      // Fallback to user metadata if profile fetch fails
+      const meta = (supabaseUser.user_metadata ?? {}) as Record<string, any>
+      const allowedRoles = ['candidate', 'intern', 'supervisor', 'admin'] as const
+      const metaRole = typeof meta.role === 'string' && (allowedRoles as readonly string[]).includes(meta.role)
+        ? (meta.role as (typeof allowedRoles)[number])
+        : 'candidate'
+
+      const nameFromMeta = [meta.first_name, meta.last_name].filter(Boolean).join(' ')
       return {
         id: supabaseUser.id,
-        name: `${profile.first_name} ${profile.last_name}`.trim() || profile.email.split('@')[0],
-        email: profile.email,
-        role: (allowedRoles as readonly string[]).includes(profile.role)
-          ? (profile.role as (typeof allowedRoles)[number])
-          : baseUser.role,
+        name: nameFromMeta || supabaseUser.email?.split('@')[0] || 'Utilisateur',
+        email: supabaseUser.email || '',
+        role: metaRole,
         avatar: meta.avatar_url
       }
     } catch (error) {
