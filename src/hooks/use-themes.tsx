@@ -98,6 +98,10 @@ export const useThemes = () => {
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) {
+        if (!user) {
+          setThemes([])
+          return
+        }
         toast({
           title: "Erreur",
           description: "Impossible de charger votre profil",

@@ -58,6 +58,10 @@ export const useTasks = () => {
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) {
+        if (!user) {
+          setTasks([])
+          return
+        }
         toast({
           title: "Erreur",
           description: "Impossible de charger votre profil",
