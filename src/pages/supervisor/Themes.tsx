@@ -97,10 +97,8 @@ export default function Themes() {
 
   const openEditDialog = (theme: any) => {
     setEditingTheme(theme)
-    // Get internships currently assigned to this theme
-    const assignedInternships = internships
-      .filter(i => i.theme_id === theme.id)
-      .map(i => i.id)
+    // Get internships from the member_internship_ids array stored in the theme
+    const assignedInternships = theme.member_internship_ids || []
     
     setFormData({
       description: theme.description || "",

@@ -189,7 +189,8 @@ export const useThemes = () => {
         .insert({
           description: themeData.description,
           status: themeData.status || "active",
-          supervisor_id: profileId
+          supervisor_id: profileId,
+          member_internship_ids: themeData.internshipIds || []
         })
         .select()
         .single()
@@ -232,7 +233,8 @@ export const useThemes = () => {
         .from("themes")
         .update({
           description: updates.description,
-          status: updates.status
+          status: updates.status,
+          member_internship_ids: updates.internshipIds || []
         })
         .eq("id", id)
 

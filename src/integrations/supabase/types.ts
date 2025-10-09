@@ -307,6 +307,7 @@ export type Database = {
           created_at: string | null
           description: string
           id: string
+          member_internship_ids: string[] | null
           status: string
           supervisor_id: string
           updated_at: string | null
@@ -315,6 +316,7 @@ export type Database = {
           created_at?: string | null
           description: string
           id?: string
+          member_internship_ids?: string[] | null
           status?: string
           supervisor_id: string
           updated_at?: string | null
@@ -323,6 +325,7 @@ export type Database = {
           created_at?: string | null
           description?: string
           id?: string
+          member_internship_ids?: string[] | null
           status?: string
           supervisor_id?: string
           updated_at?: string | null
