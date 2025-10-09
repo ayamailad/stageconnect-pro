@@ -1,81 +1,125 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
 import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { Clock, Calendar as CalendarIcon, CheckCircle, XCircle, Plus, Download } from "lucide-react"
-import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay } from "date-fns"
+import { Button } from "@/components/ui/button"
+import { Clock, Calendar as CalendarIcon, CheckCircle, AlertCircle } from "lucide-react"
+import { format, startOfWeek, endOfWeek, eachDayOfInterval, isToday, isSameDay, parseISO, isWithinInterval } from "date-fns"
 import { fr } from "date-fns/locale"
-
-// Mock data
-const attendanceData = [
-  { date: "2024-01-08", checkIn: "08:30", checkOut: "17:00", break: 60, status: "Présent", note: "" },
-  { date: "2024-01-09", checkIn: "08:45", checkOut: "17:15", break: 60, status: "Présent", note: "Réunion projet" },
-  { date: "2024-01-10", checkIn: "09:00", checkOut: "17:00", break: 45, status: "Présent", note: "" },
-  { date: "2024-01-11", checkIn: "", checkOut: "", break: 0, status: "Absent", note: "Maladie" },
-  { date: "2024-01-12", checkIn: "08:30", checkOut: "16:30", break: 60, status: "Présent", note: "Départ anticipé - formation" }
-]
-
-const weeklyStats = {
-  hoursWorked: 31.5,
-  expectedHours: 35,
-  presentDays: 4,
-  totalDays: 5,
-  averageArrival: "08:41"
-}
+import { useInternAttendance } from "@/hooks/use-intern-attendance"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function InternAttendance() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
   const [currentWeek, setCurrentWeek] = useState(new Date())
-  const [newAttendanceDialog, setNewAttendanceDialog] = useState(false)
-  const [newAttendance, setNewAttendance] = useState({
-    date: new Date(),
-    checkIn: "",
-    checkOut: "",
-    break: 60,
-    note: ""
-  })
+  const { attendance, internship, loading } = useInternAttendance()
 
   const weekStart = startOfWeek(currentWeek, { weekStartsOn: 1 })
   const weekEnd = endOfWeek(currentWeek, { weekStartsOn: 1 })
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd })
 
+  // Check if date is within internship period
+  const isInInternshipPeriod = (date: Date) => {
+    if (!internship) return false
+    const start = parseISO(internship.start_date)
+    const end = parseISO(internship.end_date)
+    return isWithinInterval(date, { start, end })
+  }
+
+  // Get attendance for a specific date
   const getAttendanceForDate = (date: Date) => {
-    return attendanceData.find(att => 
-      isSameDay(new Date(att.date), date)
+    return attendance.find(att => 
+      isSameDay(parseISO(att.date), date)
     )
   }
 
-  const calculateDailyHours = (checkIn: string, checkOut: string, breakMinutes: number) => {
-    if (!checkIn || !checkOut) return 0
-    const start = new Date(`2024-01-01T${checkIn}:00`)
-    const end = new Date(`2024-01-01T${checkOut}:00`)
-    const totalMinutes = (end.getTime() - start.getTime()) / (1000 * 60) - breakMinutes
-    return totalMinutes / 60
-  }
+  // Calculate weekly stats
+  const weeklyStats = useMemo(() => {
+    if (!internship) return null
+    
+    const weekAttendance = attendance.filter(att => {
+      const attDate = parseISO(att.date)
+      return isWithinInterval(attDate, { start: weekStart, end: weekEnd })
+    })
+
+    const presentDays = weekAttendance.filter(att => att.status === 'present').length
+    const workDays = weekDays.filter(day => {
+      const isWeekend = day.getDay() === 0 || day.getDay() === 6
+      return !isWeekend && isInInternshipPeriod(day)
+    }).length
+
+    let totalHours = 0
+    weekAttendance.forEach(att => {
+      if (att.check_in_time && att.check_out_time) {
+        const checkIn = new Date(`2000-01-01T${att.check_in_time}`)
+        const checkOut = new Date(`2000-01-01T${att.check_out_time}`)
+        const hours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)
+        totalHours += hours
+      }
+    })
+
+    return {
+      hoursWorked: totalHours,
+      expectedHours: workDays * 7, // Assuming 7 hours per day
+      presentDays,
+      totalDays: workDays,
+      attendanceRate: workDays > 0 ? Math.round((presentDays / workDays) * 100) : 0
+    }
+  }, [attendance, weekStart, weekEnd, weekDays, internship])
 
   const formatTime = (hours: number) => {
     const h = Math.floor(hours)
     const m = Math.round((hours - h) * 60)
-    return `${h}h ${m}m`
+    return `${h}h ${m.toString().padStart(2, '0')}`
   }
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case "Présent":
-        return <Badge className="bg-green-100 text-green-800">Présent</Badge>
-      case "Absent":
-        return <Badge className="bg-red-100 text-red-800">Absent</Badge>
-      case "Retard":
-        return <Badge className="bg-yellow-100 text-yellow-800">Retard</Badge>
+      case "present":
+        return <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100">Présent</Badge>
+      case "absent":
+        return <Badge className="bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100">Absent</Badge>
+      case "late":
+        return <Badge className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100">Retard</Badge>
+      case "justified":
+        return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100">Justifié</Badge>
       default:
         return <Badge variant="outline">-</Badge>
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <Skeleton className="h-12 w-64" />
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map(i => <Skeleton key={i} className="h-32" />)}
+        </div>
+        <Skeleton className="h-96" />
+      </div>
+    )
+  }
+
+  if (!internship) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold">Pointage</h1>
+          <p className="text-muted-foreground">Consultez vos présences durant votre stage</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <AlertCircle className="h-12 w-12 text-muted-foreground mb-4" />
+              <h3 className="text-lg font-semibold mb-2">Aucun stage assigné</h3>
+              <p className="text-muted-foreground">
+                Vous n'avez pas encore de stage assigné. Veuillez contacter votre superviseur.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   return (
@@ -83,134 +127,71 @@ export default function InternAttendance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold">Pointage</h1>
-          <p className="text-muted-foreground">Gérez vos heures de présence et suivez votre assiduité</p>
-        </div>
-        
-        <div className="flex gap-2">
-          <Button variant="outline">
-            <Download className="h-4 w-4 mr-2" />
-            Exporter
-          </Button>
-          <Dialog open={newAttendanceDialog} onOpenChange={setNewAttendanceDialog}>
-            <DialogTrigger asChild>
-              <Button className="btn-brand">
-                <Plus className="h-4 w-4 mr-2" />
-                Ajouter Pointage
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Ajouter un pointage</DialogTitle>
-              </DialogHeader>
-              <div className="space-y-4">
-                <div>
-                  <Label>Date</Label>
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="outline" className="w-full justify-start text-left">
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {format(newAttendance.date, "PPP", { locale: fr })}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
-                      <Calendar
-                        mode="single"
-                        selected={newAttendance.date}
-                        onSelect={(date) => date && setNewAttendance({...newAttendance, date})}
-                        initialFocus
-                      />
-                    </PopoverContent>
-                  </Popover>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label>Arrivée</Label>
-                    <Input
-                      type="time"
-                      value={newAttendance.checkIn}
-                      onChange={(e) => setNewAttendance({...newAttendance, checkIn: e.target.value})}
-                    />
-                  </div>
-                  <div>
-                    <Label>Départ</Label>
-                    <Input
-                      type="time"
-                      value={newAttendance.checkOut}
-                      onChange={(e) => setNewAttendance({...newAttendance, checkOut: e.target.value})}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <Label>Pause (minutes)</Label>
-                  <Input
-                    type="number"
-                    value={newAttendance.break}
-                    onChange={(e) => setNewAttendance({...newAttendance, break: parseInt(e.target.value)})}
-                  />
-                </div>
-                <div>
-                  <Label>Note</Label>
-                  <Textarea
-                    value={newAttendance.note}
-                    onChange={(e) => setNewAttendance({...newAttendance, note: e.target.value})}
-                    placeholder="Note optionnelle..."
-                  />
-                </div>
-                <Button onClick={() => setNewAttendanceDialog(false)} className="w-full btn-brand">
-                  Enregistrer
-                </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
+          <p className="text-muted-foreground">Consultez vos présences durant votre stage</p>
+          {internship && (
+            <p className="text-sm text-muted-foreground mt-1">
+              Période: {format(parseISO(internship.start_date), "dd MMM yyyy", { locale: fr })} - {format(parseISO(internship.end_date), "dd MMM yyyy", { locale: fr })}
+            </p>
+          )}
         </div>
       </div>
 
       {/* Weekly Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Clock className="h-4 w-4" />
-              Heures cette semaine
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatTime(weeklyStats.hoursWorked)}</div>
-            <div className="text-sm text-muted-foreground">/ {formatTime(weeklyStats.expectedHours)} attendues</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CheckCircle className="h-4 w-4" />
-              Jours présents
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weeklyStats.presentDays}</div>
-            <div className="text-sm text-muted-foreground">/ {weeklyStats.totalDays} jours</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <CalendarIcon className="h-4 w-4" />
-              Assiduité
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{Math.round((weeklyStats.presentDays / weeklyStats.totalDays) * 100)}%</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium">Arrivée moyenne</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{weeklyStats.averageArrival}</div>
-          </CardContent>
-        </Card>
-      </div>
+      {weeklyStats && (
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <Clock className="h-4 w-4" />
+                Heures cette semaine
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatTime(weeklyStats.hoursWorked)}</div>
+              <div className="text-sm text-muted-foreground">/ {formatTime(weeklyStats.expectedHours)} attendues</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CheckCircle className="h-4 w-4" />
+                Jours présents
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{weeklyStats.presentDays}</div>
+              <div className="text-sm text-muted-foreground">/ {weeklyStats.totalDays} jours</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium flex items-center gap-2">
+                <CalendarIcon className="h-4 w-4" />
+                Assiduité
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{weeklyStats.attendanceRate}%</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium">Heures totales</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{formatTime(attendance.reduce((sum, att) => {
+                if (att.check_in_time && att.check_out_time) {
+                  const checkIn = new Date(`2000-01-01T${att.check_in_time}`)
+                  const checkOut = new Date(`2000-01-01T${att.check_out_time}`)
+                  return sum + (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)
+                }
+                return sum
+              }, 0))}</div>
+              <div className="text-sm text-muted-foreground">Total du stage</div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Week Navigation */}
       <Card>
@@ -245,35 +226,43 @@ export default function InternAttendance() {
         <CardContent>
           <div className="space-y-4">
             {weekDays.map((day) => {
-              const attendance = getAttendanceForDate(day)
+              const attRecord = getAttendanceForDate(day)
               const isWeekend = day.getDay() === 0 || day.getDay() === 6
-              const dailyHours = attendance ? calculateDailyHours(attendance.checkIn, attendance.checkOut, attendance.break) : 0
+              const inPeriod = isInInternshipPeriod(day)
+              
+              let dailyHours = 0
+              if (attRecord?.check_in_time && attRecord?.check_out_time) {
+                const checkIn = new Date(`2000-01-01T${attRecord.check_in_time}`)
+                const checkOut = new Date(`2000-01-01T${attRecord.check_out_time}`)
+                dailyHours = (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)
+              }
               
               return (
                 <div 
                   key={day.toISOString()} 
-                  className={`p-4 border rounded-lg ${isToday(day) ? 'border-primary bg-primary/5' : ''} ${isWeekend ? 'bg-gray-50' : ''}`}
+                  className={`p-4 border rounded-lg ${isToday(day) ? 'border-primary bg-primary/5' : ''} ${isWeekend || !inPeriod ? 'bg-muted/30' : ''}`}
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-4 flex-wrap">
                       <div className="min-w-0">
-                        <h4 className="font-medium">
+                        <h4 className="font-medium capitalize">
                           {format(day, "EEEE dd MMM", { locale: fr })}
                           {isToday(day) && <span className="text-primary ml-2">(Aujourd'hui)</span>}
                         </h4>
                         {isWeekend && <p className="text-sm text-muted-foreground">Week-end</p>}
+                        {!inPeriod && !isWeekend && <p className="text-sm text-muted-foreground">Hors période de stage</p>}
                       </div>
                       
-                      {!isWeekend && (
+                      {!isWeekend && inPeriod && (
                         <>
-                          {attendance ? getStatusBadge(attendance.status) : <Badge variant="outline">Non renseigné</Badge>}
+                          {attRecord ? getStatusBadge(attRecord.status) : <Badge variant="outline">Non pointé</Badge>}
                           
-                          {attendance && (
-                            <div className="flex items-center gap-4 text-sm">
+                          {attRecord && (
+                            <div className="flex items-center gap-4 text-sm flex-wrap">
                               <div className="flex items-center gap-1">
                                 <Clock className="h-4 w-4" />
-                                {attendance.checkIn && attendance.checkOut ? (
-                                  <span>{attendance.checkIn} - {attendance.checkOut}</span>
+                                {attRecord.check_in_time && attRecord.check_out_time ? (
+                                  <span>{attRecord.check_in_time.substring(0, 5)} - {attRecord.check_out_time.substring(0, 5)}</span>
                                 ) : (
                                   <span>-</span>
                                 )}
@@ -285,9 +274,9 @@ export default function InternAttendance() {
                                 </div>
                               )}
                               
-                              {attendance.note && (
+                              {attRecord.notes && (
                                 <div className="text-muted-foreground">
-                                  {attendance.note}
+                                  {attRecord.notes}
                                 </div>
                               )}
                             </div>
@@ -295,12 +284,6 @@ export default function InternAttendance() {
                         </>
                       )}
                     </div>
-                    
-                    {!isWeekend && (
-                      <Button variant="outline" size="sm">
-                        {attendance ? "Modifier" : "Ajouter"}
-                      </Button>
-                    )}
                   </div>
                 </div>
               )
@@ -320,32 +303,32 @@ export default function InternAttendance() {
             mode="single"
             selected={selectedDate}
             onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-md border"
-            components={{
-              Day: ({ date, ...props }) => {
-                const attendance = getAttendanceForDate(date)
-                const hasAttendance = !!attendance
-                const isPresent = attendance?.status === "Présent"
-                
-                return (
-                  <div className="relative">
-                    <button
-                      {...props}
-                      className={`
-                        w-full h-full p-2 text-center rounded
-                        ${hasAttendance ? (isPresent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800') : ''}
-                        ${isToday(date) ? 'ring-2 ring-primary' : ''}
-                        hover:bg-muted
-                      `}
-                    >
-                      {date.getDate()}
-                    </button>
-                    {hasAttendance && (
-                      <div className={`absolute bottom-0 right-0 w-2 h-2 rounded-full ${isPresent ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    )}
-                  </div>
-                )
+            className="rounded-md border pointer-events-auto"
+            locale={fr}
+            disabled={(date) => !isInInternshipPeriod(date)}
+            modifiers={{
+              present: (date) => {
+                const att = getAttendanceForDate(date)
+                return att?.status === "present"
+              },
+              absent: (date) => {
+                const att = getAttendanceForDate(date)
+                return att?.status === "absent"
+              },
+              late: (date) => {
+                const att = getAttendanceForDate(date)
+                return att?.status === "late"
+              },
+              justified: (date) => {
+                const att = getAttendanceForDate(date)
+                return att?.status === "justified"
               }
+            }}
+            modifiersClassNames={{
+              present: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
+              absent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
+              late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
+              justified: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
             }}
           />
         </CardContent>
