@@ -88,6 +88,7 @@ export default function Tasks() {
         title: formData.title,
         description: formData.description,
         intern_id: formData.intern_id,
+        theme_id: formData.theme_id,
         priority: formData.priority,
         status: formData.status,
         due_date: formData.due_date
@@ -122,6 +123,7 @@ export default function Tasks() {
         title: formData.title,
         description: formData.description,
         intern_id: formData.intern_id,
+        theme_id: formData.theme_id,
         priority: formData.priority,
         status: formData.status,
         due_date: formData.due_date
@@ -140,13 +142,11 @@ export default function Tasks() {
 
   const openEditDialog = (task: any) => {
     setSelectedTask(task)
-    // Find the theme for this intern
-    const internInternship = internships.find(i => i.intern_id === task.intern_id)
     
     setFormData({
       title: task.title || "",
       description: task.description || "",
-      theme_id: internInternship?.theme_id || "",
+      theme_id: task.theme_id || "",
       intern_id: task.intern_id,
       priority: task.priority,
       status: task.status,

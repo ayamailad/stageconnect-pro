@@ -254,6 +254,7 @@ export type Database = {
           priority: string
           status: string
           supervisor_id: string
+          theme_id: string | null
           title: string
           updated_at: string | null
         }
@@ -268,6 +269,7 @@ export type Database = {
           priority?: string
           status?: string
           supervisor_id: string
+          theme_id?: string | null
           title: string
           updated_at?: string | null
         }
@@ -282,6 +284,7 @@ export type Database = {
           priority?: string
           status?: string
           supervisor_id?: string
+          theme_id?: string | null
           title?: string
           updated_at?: string | null
         }
@@ -298,6 +301,13 @@ export type Database = {
             columns: ["supervisor_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_theme_id_fkey"
+            columns: ["theme_id"]
+            isOneToOne: false
+            referencedRelation: "themes"
             referencedColumns: ["id"]
           },
         ]

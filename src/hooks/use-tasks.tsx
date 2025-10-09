@@ -12,6 +12,7 @@ export interface Task {
   due_date: string | null
   intern_id: string
   supervisor_id: string
+  theme_id: string | null
   created_at: string
   updated_at: string
   intern?: {
@@ -94,6 +95,7 @@ export const useTasks = () => {
     title: string
     description?: string
     intern_id: string
+    theme_id?: string
     priority: string
     status?: string
     due_date?: Date
@@ -116,6 +118,7 @@ export const useTasks = () => {
           description: taskData.description || null,
           intern_id: taskData.intern_id,
           supervisor_id: profileId,
+          theme_id: taskData.theme_id || null,
           priority: taskData.priority,
           status: taskData.status || "todo",
           due_date: taskData.due_date ? taskData.due_date.toISOString().split('T')[0] : null
@@ -146,6 +149,7 @@ export const useTasks = () => {
     title?: string
     description?: string
     intern_id?: string
+    theme_id?: string
     priority?: string
     status?: string
     due_date?: Date | null
@@ -156,6 +160,7 @@ export const useTasks = () => {
       if (updates.title !== undefined) updateData.title = updates.title
       if (updates.description !== undefined) updateData.description = updates.description
       if (updates.intern_id !== undefined) updateData.intern_id = updates.intern_id
+      if (updates.theme_id !== undefined) updateData.theme_id = updates.theme_id
       if (updates.priority !== undefined) updateData.priority = updates.priority
       if (updates.status !== undefined) updateData.status = updates.status
       if (updates.due_date !== undefined) {
