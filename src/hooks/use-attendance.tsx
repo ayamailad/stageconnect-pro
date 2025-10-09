@@ -51,7 +51,7 @@ export const useAttendance = () => {
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       return data?.id
@@ -63,6 +63,10 @@ export const useAttendance = () => {
 
   // Fetch interns assigned to supervisor
   const fetchInterns = async () => {
+    if (!user) {
+      setInterns([])
+      return
+    }
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) return
@@ -115,6 +119,11 @@ export const useAttendance = () => {
 
   // Fetch attendance records
   const fetchAttendance = async () => {
+    if (!user) {
+      setAttendance([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const profileId = await getSupervisorProfileId()

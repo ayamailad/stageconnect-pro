@@ -38,7 +38,7 @@ export const useInternTasks = () => {
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       return data?.id

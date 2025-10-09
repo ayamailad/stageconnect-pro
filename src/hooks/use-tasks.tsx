@@ -37,7 +37,7 @@ export const useTasks = () => {
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       return data?.id
@@ -49,6 +49,11 @@ export const useTasks = () => {
 
   // Fetch tasks
   const fetchTasks = async () => {
+    if (!user) {
+      setTasks([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const profileId = await getSupervisorProfileId()

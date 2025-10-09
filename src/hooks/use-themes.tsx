@@ -47,7 +47,7 @@ export const useThemes = () => {
         .from("profiles")
         .select("id")
         .eq("user_id", user.id)
-        .single()
+        .maybeSingle()
 
       if (error) throw error
       return data?.id
@@ -59,6 +59,10 @@ export const useThemes = () => {
 
   // Fetch internships for the supervisor
   const fetchInternships = async () => {
+    if (!user) {
+      setInternships([])
+      return
+    }
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) return
@@ -85,6 +89,11 @@ export const useThemes = () => {
 
   // Fetch themes with statistics
   const fetchThemes = async () => {
+    if (!user) {
+      setThemes([])
+      setLoading(false)
+      return
+    }
     setLoading(true)
     try {
       const profileId = await getSupervisorProfileId()
