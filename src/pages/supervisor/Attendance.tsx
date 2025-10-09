@@ -12,9 +12,11 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 import { Calendar as CalendarIcon, Search, Clock, CheckCircle, AlertCircle, UserCheck, Plus, Edit, Trash2, Loader2 } from "lucide-react"
 import { useAttendance } from "@/hooks/use-attendance"
+import { useToast } from "@/hooks/use-toast"
 
 export default function Attendance() {
   const { attendance, interns, loading, createAttendance, updateAttendance, deleteAttendance } = useAttendance()
+  const { toast } = useToast()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
@@ -41,6 +43,32 @@ export default function Attendance() {
       return
     }
 
+    // Validate date is not in the future
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const selectedDate = new Date(formData.date)
+    selectedDate.setHours(0, 0, 0, 0)
+    
+    if (selectedDate > today) {
+      toast({
+        title: "Erreur",
+        description: "Vous ne pouvez pas enregistrer une présence pour une date future",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Validate not weekend
+    const dayOfWeek = selectedDate.getDay()
+    if (dayOfWeek === 0 || dayOfWeek === 6) {
+      toast({
+        title: "Erreur",
+        description: "Vous ne pouvez pas enregistrer une présence le weekend",
+        variant: "destructive"
+      })
+      return
+    }
+
     // Validate date is within internship period
     const intern = interns.find(i => i.id === formData.intern_id)
     if (intern?.internship) {
@@ -49,6 +77,11 @@ export default function Attendance() {
       const endDate = new Date(intern.internship.end_date)
       
       if (date < startDate || date > endDate) {
+        toast({
+          title: "Erreur",
+          description: "La date doit être dans la période du stage",
+          variant: "destructive"
+        })
         return
       }
     }
@@ -216,11 +249,23 @@ export default function Attendance() {
                     onSelect={(date) => setFormData({ ...formData, date })}
                     placeholder="Sélectionner la date"
                     disabledDates={(date) => {
+                      // Block future dates
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      if (date > today) return true
+
+                      // Block weekends (Saturday = 6, Sunday = 0)
+                      const dayOfWeek = date.getDay()
+                      if (dayOfWeek === 0 || dayOfWeek === 6) return true
+
+                      // Block dates outside internship period
                       if (formData.intern_id) {
                         const intern = interns.find(i => i.id === formData.intern_id)
                         if (intern?.internship) {
                           const startDate = new Date(intern.internship.start_date)
                           const endDate = new Date(intern.internship.end_date)
+                          startDate.setHours(0, 0, 0, 0)
+                          endDate.setHours(0, 0, 0, 0)
                           return date < startDate || date > endDate
                         }
                       }
@@ -400,6 +445,12 @@ export default function Attendance() {
               onSelect={(date) => setSelectedDate(date ? date.toISOString().split('T')[0] : '')}
               placeholder="Sélectionner une date"
               className="w-full sm:w-[200px]"
+              disabledDates={(date) => {
+                // Block future dates
+                const today = new Date()
+                today.setHours(0, 0, 0, 0)
+                return date > today
+              }}
             />
           </div>
 
