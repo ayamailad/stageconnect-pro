@@ -136,62 +136,6 @@ export default function InternAttendance() {
         </div>
       </div>
 
-      {/* Weekly Stats */}
-      {weeklyStats && (
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <Clock className="h-4 w-4" />
-                Heures cette semaine
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatTime(weeklyStats.hoursWorked)}</div>
-              <div className="text-sm text-muted-foreground">/ {formatTime(weeklyStats.expectedHours)} attendues</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CheckCircle className="h-4 w-4" />
-                Jours présents
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{weeklyStats.presentDays}</div>
-              <div className="text-sm text-muted-foreground">/ {weeklyStats.totalDays} jours</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium flex items-center gap-2">
-                <CalendarIcon className="h-4 w-4" />
-                Assiduité
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{weeklyStats.attendanceRate}%</div>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Heures totales</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{formatTime(attendance.reduce((sum, att) => {
-                if (att.check_in_time && att.check_out_time) {
-                  const checkIn = new Date(`2000-01-01T${att.check_in_time}`)
-                  const checkOut = new Date(`2000-01-01T${att.check_out_time}`)
-                  return sum + (checkOut.getTime() - checkIn.getTime()) / (1000 * 60 * 60)
-                }
-                return sum
-              }, 0))}</div>
-              <div className="text-sm text-muted-foreground">Total du stage</div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
 
       {/* Week Navigation */}
       <Card>
