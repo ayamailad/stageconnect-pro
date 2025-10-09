@@ -31,8 +31,7 @@ export default function Tasks() {
     intern_id: "",
     priority: "medium",
     status: "todo",
-    due_date: undefined as Date | undefined,
-    estimated_hours: 0
+    due_date: undefined as Date | undefined
   })
 
   // Get available interns based on selected theme
@@ -71,14 +70,27 @@ export default function Tasks() {
       return
     }
 
+    // Validate due date is within internship period
+    if (formData.due_date) {
+      const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
+      if (selectedInternship) {
+        const dueDate = formData.due_date
+        const startDate = new Date(selectedInternship.start_date)
+        const endDate = new Date(selectedInternship.end_date)
+        
+        if (dueDate < startDate || dueDate > endDate) {
+          return
+        }
+      }
+    }
+
     const success = await createTask({
-      title: formData.title,
-      description: formData.description,
-      intern_id: formData.intern_id,
-      priority: formData.priority,
-      status: formData.status,
-      due_date: formData.due_date,
-      estimated_hours: formData.estimated_hours
+        title: formData.title,
+        description: formData.description,
+        intern_id: formData.intern_id,
+        priority: formData.priority,
+        status: formData.status,
+        due_date: formData.due_date
     })
 
     if (success) {
@@ -92,14 +104,27 @@ export default function Tasks() {
       return
     }
 
+    // Validate due date is within internship period
+    if (formData.due_date) {
+      const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
+      if (selectedInternship) {
+        const dueDate = formData.due_date
+        const startDate = new Date(selectedInternship.start_date)
+        const endDate = new Date(selectedInternship.end_date)
+        
+        if (dueDate < startDate || dueDate > endDate) {
+          return
+        }
+      }
+    }
+
     const success = await updateTask(selectedTask.id, {
-      title: formData.title,
-      description: formData.description,
-      intern_id: formData.intern_id,
-      priority: formData.priority,
-      status: formData.status,
-      due_date: formData.due_date,
-      estimated_hours: formData.estimated_hours
+        title: formData.title,
+        description: formData.description,
+        intern_id: formData.intern_id,
+        priority: formData.priority,
+        status: formData.status,
+        due_date: formData.due_date
     })
 
     if (success) {
@@ -125,8 +150,7 @@ export default function Tasks() {
       intern_id: task.intern_id,
       priority: task.priority,
       status: task.status,
-      due_date: task.due_date ? new Date(task.due_date) : undefined,
-      estimated_hours: task.estimated_hours || 0
+      due_date: task.due_date ? new Date(task.due_date) : undefined
     })
     setIsEditDialogOpen(true)
   }
@@ -144,8 +168,7 @@ export default function Tasks() {
       intern_id: "",
       priority: "medium",
       status: "todo",
-      due_date: undefined,
-      estimated_hours: 0
+      due_date: undefined
     })
   }
 
@@ -302,17 +325,17 @@ export default function Tasks() {
                     onSelect={(date) => setFormData({ ...formData, due_date: date })}
                     placeholder="Sélectionner la date d'échéance" 
                   />
+                  {formData.intern_id && (() => {
+                    const internship = internships.find(i => i.intern_id === formData.intern_id)
+                    if (internship) {
+                      return (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Période du stage: {new Date(internship.start_date).toLocaleDateString('fr-FR')} - {new Date(internship.end_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      )
+                    }
+                  })()}
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="estimated_hours">Heures estimées</Label>
-                <Input 
-                  id="estimated_hours" 
-                  type="number"
-                  min="0"
-                  value={formData.estimated_hours}
-                  onChange={(e) => setFormData({ ...formData, estimated_hours: parseInt(e.target.value) || 0 })}
-                />
               </div>
               <div>
                 <Label htmlFor="description">Description</Label>
@@ -411,23 +434,23 @@ export default function Tasks() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <Label htmlFor="edit-dueDate">Date d'échéance</Label>
                   <DatePicker 
                     date={formData.due_date}
                     onSelect={(date) => setFormData({ ...formData, due_date: date })}
                     placeholder="Sélectionner la date d'échéance" 
                   />
-                </div>
-                <div>
-                  <Label htmlFor="edit-estimated_hours">Heures estimées</Label>
-                  <Input 
-                    id="edit-estimated_hours" 
-                    type="number"
-                    min="0"
-                    value={formData.estimated_hours}
-                    onChange={(e) => setFormData({ ...formData, estimated_hours: parseInt(e.target.value) || 0 })}
-                  />
+                  {formData.intern_id && (() => {
+                    const internship = internships.find(i => i.intern_id === formData.intern_id)
+                    if (internship) {
+                      return (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Période du stage: {new Date(internship.start_date).toLocaleDateString('fr-FR')} - {new Date(internship.end_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      )
+                    }
+                  })()}
                 </div>
               </div>
               <div>

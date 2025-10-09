@@ -10,8 +10,6 @@ export interface Task {
   priority: string
   status: string
   due_date: string | null
-  estimated_hours: number | null
-  completed_hours: number | null
   intern_id: string
   supervisor_id: string
   created_at: string
@@ -99,7 +97,6 @@ export const useTasks = () => {
     priority: string
     status?: string
     due_date?: Date
-    estimated_hours?: number
   }) => {
     try {
       const profileId = await getSupervisorProfileId()
@@ -121,8 +118,7 @@ export const useTasks = () => {
           supervisor_id: profileId,
           priority: taskData.priority,
           status: taskData.status || "todo",
-          due_date: taskData.due_date ? taskData.due_date.toISOString().split('T')[0] : null,
-          estimated_hours: taskData.estimated_hours || 0
+          due_date: taskData.due_date ? taskData.due_date.toISOString().split('T')[0] : null
         })
 
       if (error) throw error
@@ -153,8 +149,6 @@ export const useTasks = () => {
     priority?: string
     status?: string
     due_date?: Date | null
-    estimated_hours?: number
-    completed_hours?: number
   }) => {
     try {
       const updateData: any = {}
@@ -167,8 +161,6 @@ export const useTasks = () => {
       if (updates.due_date !== undefined) {
         updateData.due_date = updates.due_date ? updates.due_date.toISOString().split('T')[0] : null
       }
-      if (updates.estimated_hours !== undefined) updateData.estimated_hours = updates.estimated_hours
-      if (updates.completed_hours !== undefined) updateData.completed_hours = updates.completed_hours
 
       const { error } = await supabase
         .from("tasks")
