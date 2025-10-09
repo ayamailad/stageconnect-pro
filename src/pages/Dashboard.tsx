@@ -17,15 +17,21 @@ import {
 import { useAuth } from "@/hooks/use-auth"
 import { useInternTasks } from "@/hooks/use-intern-tasks"
 import { useInternAttendance } from "@/hooks/use-intern-attendance"
+import { useUsers } from "@/hooks/use-users"
+import { useApplications } from "@/hooks/use-applications"
+import { useInternships } from "@/hooks/use-internships"
 import { useNavigate } from "react-router-dom"
 import { useMemo } from "react"
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
 
 export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const { tasks, loading: tasksLoading } = useInternTasks()
   const { attendance, internship, loading: attendanceLoading } = useInternAttendance()
+  const { users, loading: usersLoading } = useUsers()
+  const { applications, loading: applicationsLoading, getApplicationStats } = useApplications()
+  const { internships, loading: internshipsLoading } = useInternships()
 
   // Mock data - remplacer par de vraies données API
   const mockStats = {
@@ -371,38 +377,190 @@ export default function Dashboard() {
     </div>
   )
 
-  const renderAdminDashboard = () => (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Administrateur</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Vue d'ensemble de la plateforme</p>
-      </div>
+  const renderAdminDashboard = () => {
+    const applicationStats = getApplicationStats()
+    const activeInternships = internships.filter(i => i.status === 'in_progress' || i.status === 'assigned').length
+    const completedInternships = internships.filter(i => i.status === 'completed').length
+    const completionRate = internships.length > 0 
+      ? Math.round((completedInternships / internships.length) * 100) 
+      : 0
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {[
-          { title: "Utilisateurs Total", value: mockStats.admin.totalUsers, icon: Users, color: "text-blue-600" },
-          { title: "Candidatures en Attente", value: mockStats.admin.pendingApplications, icon: FileText, color: "text-warning" },
-          { title: "Stages Actifs", value: mockStats.admin.activeInternships, icon: TrendingUp, color: "text-success" },
-          { title: "Taux de Réussite", value: `${mockStats.admin.completionRate}%`, icon: CheckCircle, color: "text-primary" }
-        ].map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
-                  </div>
-                  <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+    // Applications chart data
+    const applicationsChartData = [
+      { name: 'En attente', value: applicationStats.pending, fill: 'hsl(var(--warning))' },
+      { name: 'Approuvées', value: applicationStats.approved, fill: 'hsl(var(--success))' },
+      { name: 'Rejetées', value: applicationStats.rejected, fill: 'hsl(var(--destructive))' },
+      { name: 'Entretien', value: applicationStats.interview, fill: 'hsl(var(--primary))' }
+    ].filter(item => item.value > 0)
+
+    // Internships chart data
+    const internshipsChartData = [
+      { name: 'Disponible', value: internships.filter(i => i.status === 'available').length, fill: 'hsl(var(--muted))' },
+      { name: 'Assigné', value: internships.filter(i => i.status === 'assigned').length, fill: 'hsl(var(--primary))' },
+      { name: 'En cours', value: internships.filter(i => i.status === 'in_progress').length, fill: 'hsl(var(--success))' },
+      { name: 'Terminé', value: completedInternships, fill: 'hsl(var(--secondary))' }
+    ].filter(item => item.value > 0)
+
+    return (
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Administrateur</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Vue d'ensemble de la plateforme</p>
+        </div>
+
+        {(usersLoading || applicationsLoading || internshipsLoading) ? (
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[
+                { title: "Utilisateurs Total", value: users.length, icon: Users, color: "text-blue-600" },
+                { title: "Candidatures en Attente", value: applicationStats.pending, icon: FileText, color: "text-warning" },
+                { title: "Stages Actifs", value: activeInternships, icon: TrendingUp, color: "text-success" },
+                { title: "Taux de Réussite", value: `${completionRate}%`, icon: CheckCircle, color: "text-primary" }
+              ].map((stat, index) => {
+                const Icon = stat.icon
+                return (
+                  <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
+                          <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
+                        </div>
+                        <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Applications Chart */}
+              {applicationsChartData.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Répartition des Candidatures</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Total: {applicationStats.total} candidatures
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        pending: { label: "En attente", color: "hsl(var(--warning))" },
+                        approved: { label: "Approuvées", color: "hsl(var(--success))" },
+                        rejected: { label: "Rejetées", color: "hsl(var(--destructive))" },
+                        interview: { label: "Entretien", color: "hsl(var(--primary))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={applicationsChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {applicationsChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Internships Chart */}
+              {internshipsChartData.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Répartition des Stages</CardTitle>
+                    <CardDescription className="text-xs sm:text-sm">
+                      Total: {internships.length} stages
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        available: { label: "Disponible", color: "hsl(var(--muted))" },
+                        assigned: { label: "Assigné", color: "hsl(var(--primary))" },
+                        in_progress: { label: "En cours", color: "hsl(var(--success))" },
+                        completed: { label: "Terminé", color: "hsl(var(--secondary))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <ResponsiveContainer width="100%" height="100%">
+                        <PieChart>
+                          <Pie
+                            data={internshipsChartData}
+                            dataKey="value"
+                            nameKey="name"
+                            cx="50%"
+                            cy="50%"
+                            innerRadius={60}
+                            outerRadius={80}
+                            label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                          >
+                            {internshipsChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                          <ChartTooltip content={<ChartTooltipContent />} />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Users by Role Chart */}
+            {users.length > 0 && (
+              <Card className="card-gradient">
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">Utilisateurs par Rôle</CardTitle>
+                  <CardDescription className="text-xs sm:text-sm">
+                    Distribution des {users.length} utilisateurs
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{
+                      count: { label: "Nombre", color: "hsl(var(--primary))" }
+                    }}
+                    className="h-[250px] w-full"
+                  >
+                    <BarChart data={[
+                      { role: 'Admin', count: users.filter(u => u.role === 'admin').length },
+                      { role: 'Superviseur', count: users.filter(u => u.role === 'supervisor').length },
+                      { role: 'Stagiaire', count: users.filter(u => u.role === 'intern').length },
+                      { role: 'Candidat', count: users.filter(u => u.role === 'candidate').length }
+                    ]}>
+                      <XAxis dataKey="role" tick={{ fontSize: 12 }} />
+                      <YAxis />
+                      <ChartTooltip content={<ChartTooltipContent />} />
+                      <Bar dataKey="count" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderDashboardContent = () => {
     switch (user?.role) {
