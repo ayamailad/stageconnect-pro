@@ -8,19 +8,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Checkbox } from "@/components/ui/checkbox"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2 } from "lucide-react"
 import { useThemes } from "@/hooks/use-themes"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
 export default function Themes() {
-  const { themes, loading, createTheme, updateTheme, deleteTheme } = useThemes()
+  const { themes, internships, loading, createTheme, updateTheme, deleteTheme } = useThemes()
   const [searchTerm, setSearchTerm] = useState("")
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingTheme, setEditingTheme] = useState<any>(null)
   const [formData, setFormData] = useState({
     description: "",
-    status: "active"
+    status: "active",
+    selectedInternships: [] as string[]
   })
 
   const filteredThemes = themes.filter(theme => {
@@ -57,12 +60,13 @@ export default function Themes() {
 
     const success = await createTheme({
       description: formData.description,
-      status: formData.status
+      status: formData.status,
+      internshipIds: formData.selectedInternships
     })
 
     if (success) {
       setIsCreateDialogOpen(false)
-      setFormData({ description: "", status: "active" })
+      setFormData({ description: "", status: "active", selectedInternships: [] })
     }
   }
 
@@ -73,13 +77,14 @@ export default function Themes() {
 
     const success = await updateTheme(editingTheme.id, {
       description: formData.description,
-      status: formData.status
+      status: formData.status,
+      internshipIds: formData.selectedInternships
     })
 
     if (success) {
       setIsEditDialogOpen(false)
       setEditingTheme(null)
-      setFormData({ description: "", status: "active" })
+      setFormData({ description: "", status: "active", selectedInternships: [] })
     }
   }
 
@@ -89,11 +94,32 @@ export default function Themes() {
 
   const openEditDialog = (theme: any) => {
     setEditingTheme(theme)
+    // Get internships currently assigned to this theme
+    const assignedInternships = internships
+      .filter(i => i.theme_id === theme.id)
+      .map(i => i.id)
+    
     setFormData({
       description: theme.description || "",
-      status: theme.status || "active"
+      status: theme.status || "active",
+      selectedInternships: assignedInternships
     })
     setIsEditDialogOpen(true)
+  }
+
+  const toggleInternshipSelection = (internshipId: string) => {
+    setFormData(prev => ({
+      ...prev,
+      selectedInternships: prev.selectedInternships.includes(internshipId)
+        ? prev.selectedInternships.filter(id => id !== internshipId)
+        : [...prev.selectedInternships, internshipId]
+    }))
+  }
+
+  const getInternshipLabel = (internship: any) => {
+    const startDate = new Date(internship.start_date).toLocaleDateString('fr-FR')
+    const endDate = new Date(internship.end_date).toLocaleDateString('fr-FR')
+    return `Stage ${internship.duration_months} mois (${startDate} - ${endDate})`
   }
 
   return (
@@ -142,6 +168,34 @@ export default function Themes() {
                   </SelectContent>
                 </Select>
               </div>
+              <div>
+                <Label>Membres (Stages assignés)</Label>
+                <ScrollArea className="h-[200px] border rounded-md p-4">
+                  {internships.filter(i => !i.theme_id || i.theme_id === null).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun stage disponible</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {internships
+                        .filter(i => !i.theme_id || i.theme_id === null)
+                        .map((internship) => (
+                          <div key={internship.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`create-internship-${internship.id}`}
+                              checked={formData.selectedInternships.includes(internship.id)}
+                              onCheckedChange={() => toggleInternshipSelection(internship.id)}
+                            />
+                            <label
+                              htmlFor={`create-internship-${internship.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {getInternshipLabel(internship)}
+                            </label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </ScrollArea>
+              </div>
               <Button className="w-full" onClick={handleCreateTheme}>
                 Créer le thème
               </Button>
@@ -181,6 +235,34 @@ export default function Themes() {
                     <SelectItem value="completed">Terminé</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+              <div>
+                <Label>Membres (Stages assignés)</Label>
+                <ScrollArea className="h-[200px] border rounded-md p-4">
+                  {internships.filter(i => !i.theme_id || i.theme_id === editingTheme?.id).length === 0 ? (
+                    <p className="text-sm text-muted-foreground">Aucun stage disponible</p>
+                  ) : (
+                    <div className="space-y-3">
+                      {internships
+                        .filter(i => !i.theme_id || i.theme_id === editingTheme?.id)
+                        .map((internship) => (
+                          <div key={internship.id} className="flex items-center space-x-2">
+                            <Checkbox
+                              id={`edit-internship-${internship.id}`}
+                              checked={formData.selectedInternships.includes(internship.id)}
+                              onCheckedChange={() => toggleInternshipSelection(internship.id)}
+                            />
+                            <label
+                              htmlFor={`edit-internship-${internship.id}`}
+                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
+                            >
+                              {getInternshipLabel(internship)}
+                            </label>
+                          </div>
+                        ))}
+                    </div>
+                  )}
+                </ScrollArea>
               </div>
               <Button className="w-full" onClick={handleEditTheme}>
                 Enregistrer les modifications
