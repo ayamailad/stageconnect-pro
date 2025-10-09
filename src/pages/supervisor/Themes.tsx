@@ -12,7 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
-import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2, Check, ChevronsUpDown } from "lucide-react"
+import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2, Check, ChevronsUpDown, Eye } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useThemes } from "@/hooks/use-themes"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
@@ -50,10 +50,6 @@ export default function Themes() {
       case 'draft': return 'Brouillon'
       default: return status
     }
-  }
-
-  const getProgressPercentage = (completed: number, total: number) => {
-    return total > 0 ? Math.round((completed / total) * 100) : 0
   }
 
   const handleCreateTheme = async () => {
@@ -320,7 +316,7 @@ export default function Themes() {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Thèmes</CardTitle>
@@ -346,15 +342,6 @@ export default function Themes() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{themes.reduce((sum, t) => sum + t.assignedInterns, 0)}</div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Tâches Terminées</CardTitle>
-            <BookOpen className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{themes.reduce((sum, t) => sum + t.completedTasks, 0)}</div>
           </CardContent>
         </Card>
       </div>
@@ -392,7 +379,6 @@ export default function Themes() {
                 <TableRow>
                   <TableHead>Description</TableHead>
                   <TableHead>Stagiaires</TableHead>
-                  <TableHead>Progression</TableHead>
                   <TableHead>Statut</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
@@ -410,28 +396,15 @@ export default function Themes() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        <div className="text-sm font-medium">
-                          {theme.completedTasks}/{theme.totalTasks} tâches
-                        </div>
-                        <div className="w-full bg-secondary rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-300" 
-                            style={{ width: `${getProgressPercentage(theme.completedTasks, theme.totalTasks)}%` }}
-                          />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {getProgressPercentage(theme.completedTasks, theme.totalTasks)}%
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
                       <Badge variant={getStatusBadgeVariant(theme.status)}>
                         {getStatusLabel(theme.status)}
                       </Badge>
                     </TableCell>
                     <TableCell>
                       <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
+                          <Eye className="h-4 w-4" />
+                        </Button>
                         <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
                           <Edit className="h-4 w-4" />
                         </Button>

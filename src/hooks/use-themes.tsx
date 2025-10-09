@@ -109,23 +109,20 @@ export const useThemes = () => {
       // Fetch internships and tasks for each theme to calculate stats
       const themesWithStats = await Promise.all(
         (themesData || []).map(async (theme) => {
-          // Count assigned interns (internships linked to this theme)
-          const { count: internsCount, error: internsError } = await supabase
-            .from("internships")
-            .select("*", { count: "exact", head: true })
-            .eq("theme_id", theme.id)
+          // Count assigned interns from member_internship_ids array
+          const assignedInternsCount = (theme.member_internship_ids || []).length
 
-          if (internsError) console.error("Error counting interns:", internsError)
+          // Get intern IDs from the internships
+          const internIds: string[] = []
+          if (assignedInternsCount > 0) {
+            const { data: internshipsData, error: internshipsError } = await supabase
+              .from("internships")
+              .select("intern_id")
+              .in("id", theme.member_internship_ids)
 
-          // Get all interns for this theme to count their tasks
-          const { data: internships, error: internshipsError } = await supabase
-            .from("internships")
-            .select("intern_id")
-            .eq("theme_id", theme.id)
-
-          if (internshipsError) console.error("Error fetching internships:", internshipsError)
-
-          const internIds = (internships || []).map(i => i.intern_id).filter(Boolean)
+            if (internshipsError) console.error("Error fetching internships:", internshipsError)
+            else internIds.push(...(internshipsData || []).map(i => i.intern_id).filter(Boolean))
+          }
 
           // Count total tasks for interns of this theme
           let totalTasks = 0
@@ -150,7 +147,7 @@ export const useThemes = () => {
 
           return {
             ...theme,
-            assignedInterns: internsCount || 0,
+            assignedInterns: assignedInternsCount,
             totalTasks,
             completedTasks
           }
