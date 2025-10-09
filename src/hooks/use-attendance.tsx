@@ -162,8 +162,6 @@ export const useAttendance = () => {
   const createAttendance = async (attendanceData: {
     intern_id: string
     date: Date
-    check_in_time?: string
-    check_out_time?: string
     status: string
     notes?: string
   }) => {
@@ -190,8 +188,6 @@ export const useAttendance = () => {
         .insert({
           intern_id: attendanceData.intern_id,
           date: attendanceData.date.toISOString().split('T')[0],
-          check_in_time: attendanceData.check_in_time || null,
-          check_out_time: attendanceData.check_out_time || null,
           status: attendanceData.status,
           notes: attendanceData.notes || null
         })
@@ -218,16 +214,12 @@ export const useAttendance = () => {
 
   // Update attendance record
   const updateAttendance = async (id: string, updates: {
-    check_in_time?: string | null
-    check_out_time?: string | null
     status?: string
     notes?: string | null
   }) => {
     try {
       const updateData: any = {}
       
-      if (updates.check_in_time !== undefined) updateData.check_in_time = updates.check_in_time
-      if (updates.check_out_time !== undefined) updateData.check_out_time = updates.check_out_time
       if (updates.status !== undefined) updateData.status = updates.status
       if (updates.notes !== undefined) updateData.notes = updates.notes
 

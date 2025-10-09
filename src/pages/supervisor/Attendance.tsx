@@ -24,8 +24,6 @@ export default function Attendance() {
   const [formData, setFormData] = useState({
     intern_id: "",
     date: undefined as Date | undefined,
-    check_in_time: "",
-    check_out_time: "",
     status: "present",
     notes: ""
   })
@@ -58,8 +56,6 @@ export default function Attendance() {
     const success = await createAttendance({
       intern_id: formData.intern_id,
       date: formData.date,
-      check_in_time: formData.check_in_time || undefined,
-      check_out_time: formData.check_out_time || undefined,
       status: formData.status,
       notes: formData.notes || undefined
     })
@@ -74,8 +70,6 @@ export default function Attendance() {
     if (!selectedRecord) return
 
     const success = await updateAttendance(selectedRecord.id, {
-      check_in_time: formData.check_in_time || null,
-      check_out_time: formData.check_out_time || null,
       status: formData.status,
       notes: formData.notes || null
     })
@@ -96,8 +90,6 @@ export default function Attendance() {
     setFormData({
       intern_id: record.intern_id,
       date: new Date(record.date),
-      check_in_time: record.check_in_time || "",
-      check_out_time: record.check_out_time || "",
       status: record.status,
       notes: record.notes || ""
     })
@@ -108,8 +100,6 @@ export default function Attendance() {
     setFormData({
       intern_id: "",
       date: undefined,
-      check_in_time: "",
-      check_out_time: "",
       status: "present",
       notes: ""
     })
@@ -188,13 +178,18 @@ export default function Attendance() {
                     <SelectTrigger>
                       <SelectValue placeholder="Sélectionner un stagiaire" />
                     </SelectTrigger>
-                    <SelectContent>
-                      {interns.map((intern) => (
-                        <SelectItem key={intern.id} value={intern.id}>
-                          {intern.first_name} {intern.last_name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                      <SelectContent>
+                        {interns.map((intern) => (
+                          <SelectItem key={intern.id} value={intern.id}>
+                            {intern.first_name} {intern.last_name}
+                            {intern.internship && (
+                              <span className="text-muted-foreground ml-2">
+                                ({new Date(intern.internship.start_date).toLocaleDateString()} - {new Date(intern.internship.end_date).toLocaleDateString()})
+                              </span>
+                            )}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
                   </Select>
                   {formData.intern_id && (() => {
                     const intern = interns.find(i => i.id === formData.intern_id)
@@ -224,26 +219,6 @@ export default function Attendance() {
                       }
                       return false
                     }}
-                  />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="check_in">Heure d'arrivée</Label>
-                  <Input
-                    id="check_in"
-                    type="time"
-                    value={formData.check_in_time}
-                    onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="check_out">Heure de départ</Label>
-                  <Input
-                    id="check_out"
-                    type="time"
-                    value={formData.check_out_time}
-                    onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
                   />
                 </div>
               </div>
@@ -300,26 +275,6 @@ export default function Attendance() {
                   value={selectedRecord?.date ? new Date(selectedRecord.date).toLocaleDateString('fr-FR') : ""}
                   disabled
                 />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="edit_check_in">Heure d'arrivée</Label>
-                  <Input
-                    id="edit_check_in"
-                    type="time"
-                    value={formData.check_in_time}
-                    onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="edit_check_out">Heure de départ</Label>
-                  <Input
-                    id="edit_check_out"
-                    type="time"
-                    value={formData.check_out_time}
-                    onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
-                  />
-                </div>
               </div>
               <div>
                 <Label htmlFor="edit_status">Statut</Label>
@@ -446,8 +401,6 @@ export default function Attendance() {
               <TableRow>
                 <TableHead>Stagiaire</TableHead>
                 <TableHead>Date</TableHead>
-                <TableHead>Arrivée</TableHead>
-                <TableHead>Départ</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Notes</TableHead>
                 <TableHead>Actions</TableHead>
@@ -456,7 +409,7 @@ export default function Attendance() {
             <TableBody>
               {filteredAttendance.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
                     Aucune présence trouvée
                   </TableCell>
                 </TableRow>
@@ -467,18 +420,6 @@ export default function Attendance() {
                       {record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : "N/A"}
                     </TableCell>
                     <TableCell>{new Date(record.date).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>
-                      {record.check_in_time ? (
-                        <span className={record.status === 'late' ? "text-orange-600 font-medium" : ""}>
-                          {record.check_in_time}
-                        </span>
-                      ) : (
-                        <span className="text-muted-foreground">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {record.check_out_time || <span className="text-muted-foreground">-</span>}
-                    </TableCell>
                     <TableCell>
                       <Badge variant={getStatusBadgeVariant(record.status)} className="flex items-center gap-1 w-fit">
                         {getStatusIcon(record.status)}
