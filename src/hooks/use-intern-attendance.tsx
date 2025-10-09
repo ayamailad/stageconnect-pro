@@ -58,6 +58,8 @@ export const useInternAttendance = () => {
 
   // Fetch intern's internship period
   const fetchInternship = async () => {
+    if (!user) return
+    
     try {
       const profileId = await getInternProfileId()
       if (!profileId) return
@@ -106,6 +108,12 @@ export const useInternAttendance = () => {
 
   // Fetch attendance records for intern
   const fetchAttendance = async () => {
+    if (!user) {
+      setAttendance([])
+      setLoading(false)
+      return
+    }
+    
     setLoading(true)
     try {
       const profileId = await getInternProfileId()

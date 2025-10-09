@@ -50,15 +50,16 @@ export const useInternTasks = () => {
 
   // Fetch tasks assigned to the intern
   const fetchTasks = async () => {
+    if (!user) {
+      setTasks([])
+      setLoading(false)
+      return
+    }
+    
     setLoading(true)
     try {
       const profileId = await getInternProfileId()
       if (!profileId) {
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger votre profil",
-          variant: "destructive"
-        })
         setTasks([])
         return
       }
