@@ -2,6 +2,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
+import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
 import { 
   Users, 
   FileText, 
@@ -18,6 +19,7 @@ import { useInternTasks } from "@/hooks/use-intern-tasks"
 import { useInternAttendance } from "@/hooks/use-intern-attendance"
 import { useNavigate } from "react-router-dom"
 import { useMemo } from "react"
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer } from "recharts"
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -123,6 +125,29 @@ export default function Dashboard() {
     const totalDays = attendance.length
     const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0
 
+    // Chart data for tasks
+    const tasksChartData = [
+      { name: 'Terminées', value: completedTasks, fill: 'hsl(var(--success))' },
+      { name: 'En cours', value: totalTasks - completedTasks, fill: 'hsl(var(--muted))' }
+    ]
+
+    // Chart data for attendance
+    const attendanceChartData = [
+      { name: 'Présent', value: presentDays, fill: 'hsl(var(--success))' },
+      { name: 'Absent', value: totalDays - presentDays, fill: 'hsl(var(--destructive))' }
+    ]
+
+    // Recent attendance chart data (last 7 days)
+    const recentAttendance = useMemo(() => {
+      return attendance
+        .slice(0, 7)
+        .reverse()
+        .map(a => ({
+          date: new Date(a.date).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit' }),
+          status: a.status === 'present' ? 1 : 0
+        }))
+    }, [attendance])
+
     return (
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
         <div>
@@ -177,21 +202,39 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary">
-                      {completedTasks}/{totalTasks}
-                    </span>
+                    <div>
+                      <div className="text-2xl font-bold text-primary">
+                        {completedTasks}/{totalTasks}
+                      </div>
+                      {totalTasks > 0 && (
+                        <Badge variant="secondary" className="bg-success/10 text-success mt-1">
+                          {completionRate}%
+                        </Badge>
+                      )}
+                    </div>
                     {totalTasks > 0 && (
-                      <Badge variant="secondary" className="bg-success/10 text-success">
-                        {completionRate}%
-                      </Badge>
+                      <ChartContainer
+                        config={{
+                          completed: { label: "Terminées", color: "hsl(var(--success))" },
+                          pending: { label: "En cours", color: "hsl(var(--muted))" }
+                        }}
+                        className="h-[80px] w-[80px]"
+                      >
+                        <PieChart>
+                          <Pie
+                            data={tasksChartData}
+                            dataKey="value"
+                            innerRadius={25}
+                            outerRadius={35}
+                          >
+                            {tasksChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
                     )}
                   </div>
-                  {totalTasks > 0 && (
-                    <Progress 
-                      value={completionRate} 
-                      className="h-2"
-                    />
-                  )}
                   <Button 
                     className="w-full btn-brand" 
                     size="sm"
@@ -217,17 +260,36 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="flex items-center justify-between">
-                    <span className="text-2xl font-bold text-primary">
-                      {attendanceRate}%
-                    </span>
+                    <div>
+                      <div className="text-2xl font-bold text-primary">
+                        {attendanceRate}%
+                      </div>
+                      <div className="text-sm text-muted-foreground mt-1">
+                        {presentDays}/{totalDays} jours
+                      </div>
+                    </div>
                     {totalDays > 0 && (
-                      <Badge variant="secondary" className={attendanceRate >= 80 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>
-                        {attendanceRate >= 80 ? 'Excellent' : 'À améliorer'}
-                      </Badge>
+                      <ChartContainer
+                        config={{
+                          present: { label: "Présent", color: "hsl(var(--success))" },
+                          absent: { label: "Absent", color: "hsl(var(--destructive))" }
+                        }}
+                        className="h-[80px] w-[80px]"
+                      >
+                        <PieChart>
+                          <Pie
+                            data={attendanceChartData}
+                            dataKey="value"
+                            innerRadius={25}
+                            outerRadius={35}
+                          >
+                            {attendanceChartData.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.fill} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ChartContainer>
                     )}
-                  </div>
-                  <div className="text-sm text-muted-foreground">
-                    {presentDays} jours présents / {totalDays} jours
                   </div>
                   <Button 
                     className="w-full btn-brand" 
@@ -241,6 +303,37 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Recent attendance chart */}
+        {recentAttendance.length > 0 && (
+          <Card className="card-gradient">
+            <CardHeader>
+              <CardTitle className="text-base sm:text-lg">Présence des 7 derniers jours</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ChartContainer
+                config={{
+                  status: { label: "Présence", color: "hsl(var(--primary))" }
+                }}
+                className="h-[200px] w-full"
+              >
+                <BarChart data={recentAttendance}>
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                  <YAxis hide domain={[0, 1]} />
+                  <ChartTooltip 
+                    content={<ChartTooltipContent />}
+                    formatter={(value) => [value === 1 ? 'Présent' : 'Absent', 'Statut']}
+                  />
+                  <Bar 
+                    dataKey="status" 
+                    fill="hsl(var(--primary))" 
+                    radius={[4, 4, 0, 0]}
+                  />
+                </BarChart>
+              </ChartContainer>
+            </CardContent>
+          </Card>
+        )}
       </div>
     )
   }
