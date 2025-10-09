@@ -181,12 +181,19 @@ export default function Attendance() {
                       <SelectContent>
                         {interns.map((intern) => (
                           <SelectItem key={intern.id} value={intern.id}>
-                            {intern.first_name} {intern.last_name}
-                            {intern.internship && (
-                              <span className="text-muted-foreground ml-2">
-                                ({new Date(intern.internship.start_date).toLocaleDateString()} - {new Date(intern.internship.end_date).toLocaleDateString()})
-                              </span>
-                            )}
+                            <div className="flex flex-col">
+                              <span>{intern.first_name} {intern.last_name}</span>
+                              {intern.internship && (
+                                <div className="text-xs text-muted-foreground">
+                                  {intern.internship.theme && (
+                                    <div className="truncate max-w-[300px]">Thème: {intern.internship.theme.description}</div>
+                                  )}
+                                  <div>
+                                    {new Date(intern.internship.start_date).toLocaleDateString('fr-FR')} - {new Date(intern.internship.end_date).toLocaleDateString('fr-FR')}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
                           </SelectItem>
                         ))}
                       </SelectContent>

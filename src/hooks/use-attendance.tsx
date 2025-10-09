@@ -28,6 +28,10 @@ export interface Intern {
     id: string
     start_date: string
     end_date: string
+    theme?: {
+      id: string
+      description: string
+    }
   }
 }
 
@@ -69,6 +73,10 @@ export const useAttendance = () => {
           id,
           start_date,
           end_date,
+          theme:themes(
+            id,
+            description
+          ),
           intern:profiles!internships_intern_id_fkey(
             id,
             first_name,
@@ -89,7 +97,8 @@ export const useAttendance = () => {
           internship: {
             id: i.id,
             start_date: i.start_date,
-            end_date: i.end_date
+            end_date: i.end_date,
+            theme: i.theme
           }
         })) || []
 
