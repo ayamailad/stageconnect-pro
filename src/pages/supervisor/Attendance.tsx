@@ -4,320 +4,116 @@ import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { DatePicker } from "@/components/ui/date-picker"
-import { Calendar as CalendarIcon, Search, Clock, CheckCircle, AlertCircle, UserCheck } from "lucide-react"
-
-interface AttendanceRecord {
-  id: string
-  internName: string
-  date: string
-  checkIn: string | null
-  checkOut: string | null
-  status: 'present' | 'late' | 'absent' | 'half_day'
-  workHours: number
-  notes?: string
-}
-
-const mockAttendance: AttendanceRecord[] = [
-  // Today's records (2024-08-26)
-  {
-    id: "1",
-    internName: "Emma Dubois",
-    date: "2024-08-26",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "2",
-    internName: "Thomas Martin",
-    date: "2024-08-26",
-    checkIn: "09:15",
-    checkOut: "17:00",
-    status: "late",
-    workHours: 7.75,
-    notes: "Retard transport en commun"
-  },
-  {
-    id: "3",
-    internName: "Marie Bernard",
-    date: "2024-08-26",
-    checkIn: null,
-    checkOut: null,
-    status: "absent",
-    workHours: 0,
-    notes: "Maladie - certificat médical fourni"
-  },
-  {
-    id: "4",
-    internName: "Lucas Petit",
-    date: "2024-08-26",
-    checkIn: "08:45",
-    checkOut: "12:30",
-    status: "half_day",
-    workHours: 3.75,
-    notes: "Formation externe l'après-midi"
-  },
-  {
-    id: "5",
-    internName: "Sophie Moreau",
-    date: "2024-08-26",
-    checkIn: "08:30",
-    checkOut: "17:30",
-    status: "present",
-    workHours: 9,
-    notes: "Heures supplémentaires pour finir projet"
-  },
-  {
-    id: "6",
-    internName: "Antoine Rousseau",
-    date: "2024-08-26",
-    checkIn: "08:00",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 9,
-    notes: ""
-  },
-  {
-    id: "7",
-    internName: "Clara Durand",
-    date: "2024-08-26",
-    checkIn: "09:30",
-    checkOut: "17:00",
-    status: "late",
-    workHours: 7.5,
-    notes: "Problème de transport"
-  },
-  // Yesterday's records (2024-08-25)
-  {
-    id: "8",
-    internName: "Emma Dubois",
-    date: "2024-08-25",
-    checkIn: "08:45",
-    checkOut: "17:15",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "9",
-    internName: "Thomas Martin",
-    date: "2024-08-25",
-    checkIn: "08:30",
-    checkOut: "12:30",
-    status: "half_day",
-    workHours: 4,
-    notes: "Rendez-vous médical après-midi"
-  },
-  {
-    id: "10",
-    internName: "Marie Bernard",
-    date: "2024-08-25",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "11",
-    internName: "Lucas Petit",
-    date: "2024-08-25",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "12",
-    internName: "Sophie Moreau",
-    date: "2024-08-25",
-    checkIn: "08:15",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.75,
-    notes: ""
-  },
-  {
-    id: "13",
-    internName: "Antoine Rousseau",
-    date: "2024-08-25",
-    checkIn: "09:00",
-    checkOut: "17:00",
-    status: "late",
-    workHours: 8,
-    notes: "Embouteillages"
-  },
-  {
-    id: "14",
-    internName: "Clara Durand",
-    date: "2024-08-25",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  // Friday's records (2024-08-23)
-  {
-    id: "15",
-    internName: "Emma Dubois",
-    date: "2024-08-23",
-    checkIn: "08:30",
-    checkOut: "16:30",
-    status: "present",
-    workHours: 8,
-    notes: "Départ anticipé autorisé"
-  },
-  {
-    id: "16",
-    internName: "Thomas Martin",
-    date: "2024-08-23",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "17",
-    internName: "Marie Bernard",
-    date: "2024-08-23",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "18",
-    internName: "Lucas Petit",
-    date: "2024-08-23",
-    checkIn: null,
-    checkOut: null,
-    status: "absent",
-    workHours: 0,
-    notes: "Congé personnel autorisé"
-  },
-  {
-    id: "19",
-    internName: "Sophie Moreau",
-    date: "2024-08-23",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "20",
-    internName: "Antoine Rousseau",
-    date: "2024-08-23",
-    checkIn: "08:45",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.25,
-    notes: ""
-  },
-  {
-    id: "21",
-    internName: "Clara Durand",
-    date: "2024-08-23",
-    checkIn: "09:45",
-    checkOut: "17:00",
-    status: "late",
-    workHours: 7.25,
-    notes: "Panne de réveil"
-  },
-  // Thursday's records (2024-08-22)
-  {
-    id: "22",
-    internName: "Emma Dubois",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "23",
-    internName: "Thomas Martin",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "24",
-    internName: "Marie Bernard",
-    date: "2024-08-22",
-    checkIn: "08:15",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.75,
-    notes: ""
-  },
-  {
-    id: "25",
-    internName: "Lucas Petit",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "26",
-    internName: "Sophie Moreau",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "13:00",
-    status: "half_day",
-    workHours: 4.5,
-    notes: "Formation externe après-midi"
-  },
-  {
-    id: "27",
-    internName: "Antoine Rousseau",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  },
-  {
-    id: "28",
-    internName: "Clara Durand",
-    date: "2024-08-22",
-    checkIn: "08:30",
-    checkOut: "17:00",
-    status: "present",
-    workHours: 8.5,
-    notes: ""
-  }
-]
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
+import { Calendar as CalendarIcon, Search, Clock, CheckCircle, AlertCircle, UserCheck, Plus, Edit, Trash2, Loader2 } from "lucide-react"
+import { useAttendance } from "@/hooks/use-attendance"
 
 export default function Attendance() {
-  const [attendance] = useState<AttendanceRecord[]>(mockAttendance)
+  const { attendance, interns, loading, createAttendance, updateAttendance, deleteAttendance } = useAttendance()
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [selectedDate, setSelectedDate] = useState<string>(new Date().toISOString().split('T')[0])
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [selectedRecord, setSelectedRecord] = useState<any>(null)
+  const [formData, setFormData] = useState({
+    intern_id: "",
+    date: undefined as Date | undefined,
+    check_in_time: "",
+    check_out_time: "",
+    status: "present",
+    notes: ""
+  })
 
   const filteredAttendance = attendance.filter(record => {
-    const matchesSearch = record.internName.toLowerCase().includes(searchTerm.toLowerCase())
+    const internName = record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : ""
+    const matchesSearch = internName.toLowerCase().includes(searchTerm.toLowerCase())
     const matchesStatus = selectedStatus === "all" || record.status === selectedStatus
     const matchesDate = selectedDate === "" || record.date === selectedDate
     return matchesSearch && matchesStatus && matchesDate
   })
+
+  const handleCreateAttendance = async () => {
+    if (!formData.intern_id || !formData.date) {
+      return
+    }
+
+    // Validate date is within internship period
+    const intern = interns.find(i => i.id === formData.intern_id)
+    if (intern?.internship) {
+      const date = formData.date
+      const startDate = new Date(intern.internship.start_date)
+      const endDate = new Date(intern.internship.end_date)
+      
+      if (date < startDate || date > endDate) {
+        return
+      }
+    }
+
+    const success = await createAttendance({
+      intern_id: formData.intern_id,
+      date: formData.date,
+      check_in_time: formData.check_in_time || undefined,
+      check_out_time: formData.check_out_time || undefined,
+      status: formData.status,
+      notes: formData.notes || undefined
+    })
+
+    if (success) {
+      setIsCreateDialogOpen(false)
+      resetForm()
+    }
+  }
+
+  const handleEditAttendance = async () => {
+    if (!selectedRecord) return
+
+    const success = await updateAttendance(selectedRecord.id, {
+      check_in_time: formData.check_in_time || null,
+      check_out_time: formData.check_out_time || null,
+      status: formData.status,
+      notes: formData.notes || null
+    })
+
+    if (success) {
+      setIsEditDialogOpen(false)
+      setSelectedRecord(null)
+      resetForm()
+    }
+  }
+
+  const handleDeleteAttendance = async (id: string) => {
+    await deleteAttendance(id)
+  }
+
+  const openEditDialog = (record: any) => {
+    setSelectedRecord(record)
+    setFormData({
+      intern_id: record.intern_id,
+      date: new Date(record.date),
+      check_in_time: record.check_in_time || "",
+      check_out_time: record.check_out_time || "",
+      status: record.status,
+      notes: record.notes || ""
+    })
+    setIsEditDialogOpen(true)
+  }
+
+  const resetForm = () => {
+    setFormData({
+      intern_id: "",
+      date: undefined,
+      check_in_time: "",
+      check_out_time: "",
+      status: "present",
+      notes: ""
+    })
+  }
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -355,26 +151,13 @@ export default function Attendance() {
   const absentToday = todayRecords.filter(record => record.status === 'absent').length
   const lateToday = todayRecords.filter(record => record.status === 'late').length
 
-  // Calculate weekly stats
-  const getWeekStart = (date: Date) => {
-    const d = new Date(date)
-    const day = d.getDay()
-    const diff = d.getDate() - day + (day === 0 ? -6 : 1)
-    return new Date(d.setDate(diff))
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
   }
-
-  const weekStart = getWeekStart(new Date())
-  const weekEnd = new Date(weekStart)
-  weekEnd.setDate(weekStart.getDate() + 6)
-
-  const weekRecords = attendance.filter(record => {
-    const recordDate = new Date(record.date)
-    return recordDate >= weekStart && recordDate <= weekEnd
-  })
-
-  const averageHoursThisWeek = weekRecords.length > 0 
-    ? weekRecords.reduce((sum, record) => sum + record.workHours, 0) / weekRecords.length
-    : 0
 
   return (
     <div className="space-y-6">
@@ -383,6 +166,190 @@ export default function Attendance() {
           <h1 className="text-3xl font-bold">Présences</h1>
           <p className="text-muted-foreground">Suivez les présences et horaires des stagiaires</p>
         </div>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button onClick={resetForm}>
+              <Plus className="mr-2 h-4 w-4" />
+              Enregistrer une présence
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Enregistrer une présence</DialogTitle>
+              <DialogDescription>
+                Enregistrez la présence d'un stagiaire pour une date donnée
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="intern">Stagiaire</Label>
+                  <Select value={formData.intern_id} onValueChange={(value) => setFormData({ ...formData, intern_id: value })}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Sélectionner un stagiaire" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {interns.map((intern) => (
+                        <SelectItem key={intern.id} value={intern.id}>
+                          {intern.first_name} {intern.last_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {formData.intern_id && (() => {
+                    const intern = interns.find(i => i.id === formData.intern_id)
+                    if (intern?.internship) {
+                      return (
+                        <p className="text-sm text-muted-foreground mt-1">
+                          Période: {new Date(intern.internship.start_date).toLocaleDateString('fr-FR')} - {new Date(intern.internship.end_date).toLocaleDateString('fr-FR')}
+                        </p>
+                      )
+                    }
+                  })()}
+                </div>
+                <div>
+                  <Label htmlFor="date">Date</Label>
+                  <DatePicker
+                    date={formData.date}
+                    onSelect={(date) => setFormData({ ...formData, date })}
+                    placeholder="Sélectionner la date"
+                    disabledDates={(date) => {
+                      if (formData.intern_id) {
+                        const intern = interns.find(i => i.id === formData.intern_id)
+                        if (intern?.internship) {
+                          const startDate = new Date(intern.internship.start_date)
+                          const endDate = new Date(intern.internship.end_date)
+                          return date < startDate || date > endDate
+                        }
+                      }
+                      return false
+                    }}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="check_in">Heure d'arrivée</Label>
+                  <Input
+                    id="check_in"
+                    type="time"
+                    value={formData.check_in_time}
+                    onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="check_out">Heure de départ</Label>
+                  <Input
+                    id="check_out"
+                    type="time"
+                    value={formData.check_out_time}
+                    onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="status">Statut</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="present">Présent</SelectItem>
+                    <SelectItem value="late">En retard</SelectItem>
+                    <SelectItem value="half_day">Demi-journée</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="notes">Notes</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Notes additionnelles..."
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+              <Button className="w-full" onClick={handleCreateAttendance} disabled={!formData.intern_id || !formData.date}>
+                Enregistrer la présence
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Modifier la présence</DialogTitle>
+              <DialogDescription>
+                Modifiez les détails de la présence
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Stagiaire</Label>
+                <Input
+                  value={selectedRecord?.intern ? `${selectedRecord.intern.first_name} ${selectedRecord.intern.last_name}` : ""}
+                  disabled
+                />
+              </div>
+              <div>
+                <Label>Date</Label>
+                <Input
+                  value={selectedRecord?.date ? new Date(selectedRecord.date).toLocaleDateString('fr-FR') : ""}
+                  disabled
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="edit_check_in">Heure d'arrivée</Label>
+                  <Input
+                    id="edit_check_in"
+                    type="time"
+                    value={formData.check_in_time}
+                    onChange={(e) => setFormData({ ...formData, check_in_time: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="edit_check_out">Heure de départ</Label>
+                  <Input
+                    id="edit_check_out"
+                    type="time"
+                    value={formData.check_out_time}
+                    onChange={(e) => setFormData({ ...formData, check_out_time: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div>
+                <Label htmlFor="edit_status">Statut</Label>
+                <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner le statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="present">Présent</SelectItem>
+                    <SelectItem value="late">En retard</SelectItem>
+                    <SelectItem value="half_day">Demi-journée</SelectItem>
+                    <SelectItem value="absent">Absent</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label htmlFor="edit_notes">Notes</Label>
+                <Textarea
+                  id="edit_notes"
+                  placeholder="Notes additionnelles..."
+                  value={formData.notes}
+                  onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                />
+              </div>
+              <Button className="w-full" onClick={handleEditAttendance}>
+                Modifier la présence
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Stats Cards */}
@@ -407,7 +374,7 @@ export default function Attendance() {
           <CardContent>
             <div className="text-2xl font-bold">{absentToday}</div>
             <p className="text-xs text-muted-foreground">
-              {((absentToday / Math.max(todayRecords.length, 1)) * 100).toFixed(0)}% du total
+              {todayRecords.length > 0 ? ((absentToday / todayRecords.length) * 100).toFixed(0) : 0}% du total
             </p>
           </CardContent>
         </Card>
@@ -419,19 +386,19 @@ export default function Attendance() {
           <CardContent>
             <div className="text-2xl font-bold">{lateToday}</div>
             <p className="text-xs text-muted-foreground">
-              {((lateToday / Math.max(todayRecords.length, 1)) * 100).toFixed(0)}% du total
+              {todayRecords.length > 0 ? ((lateToday / todayRecords.length) * 100).toFixed(0) : 0}% du total
             </p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Heures moy./semaine</CardTitle>
-            <Clock className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Total stagiaires</CardTitle>
+            <UserCheck className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{averageHoursThisWeek.toFixed(1)}h</div>
+            <div className="text-2xl font-bold">{interns.length}</div>
             <p className="text-xs text-muted-foreground">
-              Cette semaine
+              En stage actuellement
             </p>
           </CardContent>
         </Card>
@@ -481,53 +448,68 @@ export default function Attendance() {
                 <TableHead>Date</TableHead>
                 <TableHead>Arrivée</TableHead>
                 <TableHead>Départ</TableHead>
-                <TableHead>Heures travaillées</TableHead>
                 <TableHead>Statut</TableHead>
                 <TableHead>Notes</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAttendance.map((record) => (
-                <TableRow key={record.id}>
-                  <TableCell className="font-medium">{record.internName}</TableCell>
-                  <TableCell>{new Date(record.date).toLocaleDateString('fr-FR')}</TableCell>
-                  <TableCell>
-                    {record.checkIn ? (
-                      <span className={record.status === 'late' ? "text-orange-600 font-medium" : ""}>
-                        {record.checkIn}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {record.checkOut ? (
-                      <span>{record.checkOut}</span>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="font-medium">{record.workHours}h</span>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={getStatusBadgeVariant(record.status)} className="flex items-center gap-1 w-fit">
-                      {getStatusIcon(record.status)}
-                      {getStatusLabel(record.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {record.notes ? (
-                      <span className="text-sm">{record.notes}</span>
-                    ) : (
-                      <span className="text-muted-foreground text-sm">-</span>
-                    )}
+              {filteredAttendance.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                    Aucune présence trouvée
                   </TableCell>
                 </TableRow>
-              ))}
+              ) : (
+                filteredAttendance.map((record) => (
+                  <TableRow key={record.id}>
+                    <TableCell className="font-medium">
+                      {record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : "N/A"}
+                    </TableCell>
+                    <TableCell>{new Date(record.date).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>
+                      {record.check_in_time ? (
+                        <span className={record.status === 'late' ? "text-orange-600 font-medium" : ""}>
+                          {record.check_in_time}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">-</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {record.check_out_time || <span className="text-muted-foreground">-</span>}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStatusBadgeVariant(record.status)} className="flex items-center gap-1 w-fit">
+                        {getStatusIcon(record.status)}
+                        {getStatusLabel(record.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="max-w-[200px] truncate">
+                        {record.notes || <span className="text-muted-foreground">-</span>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(record)}>
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <ConfirmationDialog
+                          title="Supprimer la présence"
+                          description="Êtes-vous sûr de vouloir supprimer cette présence ? Cette action est irréversible."
+                          onConfirm={() => handleDeleteAttendance(record.id)}
+                          triggerButton={
+                            <Button variant="outline" size="sm">
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          }
+                        />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
             </TableBody>
           </Table>
         </CardContent>
