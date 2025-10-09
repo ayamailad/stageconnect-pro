@@ -320,10 +320,27 @@ export default function Tasks() {
                 </div>
                 <div>
                   <Label htmlFor="dueDate">Date d'échéance</Label>
-                  <DatePicker 
+                  <DatePicker
                     date={formData.due_date}
                     onSelect={(date) => setFormData({ ...formData, due_date: date })}
-                    placeholder="Sélectionner la date d'échéance" 
+                    placeholder="Sélectionner la date d'échéance"
+                    disabledDates={(date) => {
+                      const today = new Date()
+                      today.setHours(0, 0, 0, 0)
+                      
+                      if (date < today) return true
+                      
+                      if (formData.intern_id) {
+                        const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
+                        if (selectedInternship) {
+                          const startDate = new Date(selectedInternship.start_date)
+                          const endDate = new Date(selectedInternship.end_date)
+                          return date < startDate || date > endDate
+                        }
+                      }
+                      
+                      return false
+                    }}
                   />
                   {formData.intern_id && (() => {
                     const internship = internships.find(i => i.intern_id === formData.intern_id)
