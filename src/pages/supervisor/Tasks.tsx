@@ -172,10 +172,12 @@ export default function Tasks() {
     })
   }
 
-  // Reset intern selection when theme changes
+  // Reset intern selection when theme changes (only in create mode)
   useEffect(() => {
-    setFormData(prev => ({ ...prev, intern_id: "" }))
-  }, [formData.theme_id])
+    if (!isEditDialogOpen) {
+      setFormData(prev => ({ ...prev, intern_id: "" }))
+    }
+  }, [formData.theme_id, isEditDialogOpen])
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
