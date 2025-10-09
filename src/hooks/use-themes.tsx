@@ -23,6 +23,11 @@ interface Internship {
   status: string
   intern_id: string
   theme_id: string | null
+  intern?: {
+    id: string
+    first_name: string
+    last_name: string
+  }
 }
 
 export const useThemes = () => {
@@ -59,7 +64,14 @@ export const useThemes = () => {
 
       const { data, error } = await supabase
         .from("internships")
-        .select("*")
+        .select(`
+          *,
+          intern:profiles!internships_intern_id_fkey(
+            id,
+            first_name,
+            last_name
+          )
+        `)
         .eq("supervisor_id", profileId)
         .order("start_date", { ascending: false })
 

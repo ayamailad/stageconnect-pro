@@ -10,7 +10,10 @@ import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ScrollArea } from "@/components/ui/scroll-area"
-import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2 } from "lucide-react"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from "@/components/ui/command"
+import { BookOpen, Plus, Search, Edit, Trash2, Users, Loader2, Check, ChevronsUpDown } from "lucide-react"
+import { cn } from "@/lib/utils"
 import { useThemes } from "@/hooks/use-themes"
 import { ConfirmationDialog } from "@/components/ui/confirmation-dialog"
 
@@ -117,9 +120,23 @@ export default function Themes() {
   }
 
   const getInternshipLabel = (internship: any) => {
+    const internName = internship.intern 
+      ? `${internship.intern.first_name} ${internship.intern.last_name}`
+      : 'Stagiaire non assigné'
     const startDate = new Date(internship.start_date).toLocaleDateString('fr-FR')
     const endDate = new Date(internship.end_date).toLocaleDateString('fr-FR')
-    return `Stage ${internship.duration_months} mois (${startDate} - ${endDate})`
+    return `${internName} - Stage ${internship.duration_months} mois (${startDate} - ${endDate})`
+  }
+
+  const getSelectedInternshipsLabel = () => {
+    if (formData.selectedInternships.length === 0) return "Sélectionner les membres"
+    if (formData.selectedInternships.length === 1) {
+      const internship = internships.find(i => i.id === formData.selectedInternships[0])
+      return internship?.intern 
+        ? `${internship.intern.first_name} ${internship.intern.last_name}`
+        : "1 sélectionné"
+    }
+    return `${formData.selectedInternships.length} membres sélectionnés`
   }
 
   return (
@@ -170,31 +187,47 @@ export default function Themes() {
               </div>
               <div>
                 <Label>Membres (Stages assignés)</Label>
-                <ScrollArea className="h-[200px] border rounded-md p-4">
-                  {internships.filter(i => !i.theme_id || i.theme_id === null).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Aucun stage disponible</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {internships
-                        .filter(i => !i.theme_id || i.theme_id === null)
-                        .map((internship) => (
-                          <div key={internship.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`create-internship-${internship.id}`}
-                              checked={formData.selectedInternships.includes(internship.id)}
-                              onCheckedChange={() => toggleInternshipSelection(internship.id)}
-                            />
-                            <label
-                              htmlFor={`create-internship-${internship.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {getInternshipLabel(internship)}
-                            </label>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </ScrollArea>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {getSelectedInternshipsLabel()}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un stagiaire..." />
+                      <CommandEmpty>Aucun stagiaire trouvé</CommandEmpty>
+                      <CommandGroup>
+                        <ScrollArea className="h-[200px]">
+                          {internships
+                            .filter(i => !i.theme_id || i.theme_id === null)
+                            .map((internship) => (
+                              <CommandItem
+                                key={internship.id}
+                                onSelect={() => toggleInternshipSelection(internship.id)}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.selectedInternships.includes(internship.id)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {getInternshipLabel(internship)}
+                              </CommandItem>
+                            ))}
+                        </ScrollArea>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <Button className="w-full" onClick={handleCreateTheme}>
                 Créer le thème
@@ -238,31 +271,47 @@ export default function Themes() {
               </div>
               <div>
                 <Label>Membres (Stages assignés)</Label>
-                <ScrollArea className="h-[200px] border rounded-md p-4">
-                  {internships.filter(i => !i.theme_id || i.theme_id === editingTheme?.id).length === 0 ? (
-                    <p className="text-sm text-muted-foreground">Aucun stage disponible</p>
-                  ) : (
-                    <div className="space-y-3">
-                      {internships
-                        .filter(i => !i.theme_id || i.theme_id === editingTheme?.id)
-                        .map((internship) => (
-                          <div key={internship.id} className="flex items-center space-x-2">
-                            <Checkbox
-                              id={`edit-internship-${internship.id}`}
-                              checked={formData.selectedInternships.includes(internship.id)}
-                              onCheckedChange={() => toggleInternshipSelection(internship.id)}
-                            />
-                            <label
-                              htmlFor={`edit-internship-${internship.id}`}
-                              className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 cursor-pointer"
-                            >
-                              {getInternshipLabel(internship)}
-                            </label>
-                          </div>
-                        ))}
-                    </div>
-                  )}
-                </ScrollArea>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      className="w-full justify-between"
+                    >
+                      {getSelectedInternshipsLabel()}
+                      <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-full p-0" align="start">
+                    <Command>
+                      <CommandInput placeholder="Rechercher un stagiaire..." />
+                      <CommandEmpty>Aucun stagiaire trouvé</CommandEmpty>
+                      <CommandGroup>
+                        <ScrollArea className="h-[200px]">
+                          {internships
+                            .filter(i => !i.theme_id || i.theme_id === editingTheme?.id)
+                            .map((internship) => (
+                              <CommandItem
+                                key={internship.id}
+                                onSelect={() => toggleInternshipSelection(internship.id)}
+                                className="cursor-pointer"
+                              >
+                                <Check
+                                  className={cn(
+                                    "mr-2 h-4 w-4",
+                                    formData.selectedInternships.includes(internship.id)
+                                      ? "opacity-100"
+                                      : "opacity-0"
+                                  )}
+                                />
+                                {getInternshipLabel(internship)}
+                              </CommandItem>
+                            ))}
+                        </ScrollArea>
+                      </CommandGroup>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
               </div>
               <Button className="w-full" onClick={handleEditTheme}>
                 Enregistrer les modifications
