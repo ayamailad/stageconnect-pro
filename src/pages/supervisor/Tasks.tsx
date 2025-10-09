@@ -656,8 +656,7 @@ export default function Tasks() {
                 </TableRow>
               ) : (
                 filteredTasks.map((task) => {
-                  const internInternship = internships.find(i => i.intern_id === task.intern_id)
-                  const theme = themes.find(t => t.id === internInternship?.theme_id)
+                  const theme = themes.find(t => t.id === task.theme_id)
                   
                   return (
                     <TableRow key={task.id} className={isOverdue(task.due_date) ? "bg-destructive/5" : ""}>
