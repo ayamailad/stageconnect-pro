@@ -3,57 +3,30 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
-import { Textarea } from "@/components/ui/textarea"
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calendar } from "@/components/ui/calendar"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import { CheckCircle, Clock, AlertCircle, Plus, Calendar as CalendarIcon, FileText, User } from "lucide-react"
+import { CheckCircle, Clock, AlertCircle, Calendar as CalendarIcon, FileText, User, Loader2 } from "lucide-react"
 import { format } from "date-fns"
 import { fr } from "date-fns/locale"
+import { useInternTasks } from "@/hooks/use-intern-tasks"
 
-// Mock data
-const mockTasks = [
-  {
-    id: 1,
-    title: "Analyser les besoins clients",
-    description: "Étudier les retours clients et proposer des améliorations",
-    status: "En cours",
-    priority: "Haute",
-    dueDate: "2024-01-15",
-    assignedBy: "Marie Dubois",
-    estimatedHours: 8,
-    completedHours: 3
-  },
-  {
-    id: 2,
-    title: "Rédiger rapport hebdomadaire",
-    description: "Synthèse des activités de la semaine",
-    status: "Terminé",
-    priority: "Moyenne",
-    dueDate: "2024-01-12",
-    assignedBy: "Jean Martin",
-    estimatedHours: 2,
-    completedHours: 2
-  },
-  {
-    id: 3,
-    title: "Formation React avancé",
-    description: "Suivre le module de formation sur React et hooks",
-    status: "À faire",
-    priority: "Basse",
-    dueDate: "2024-01-20",
-    assignedBy: "Sophie Bernard",
-    estimatedHours: 16,
-    completedHours: 0
-  }
-]
+const statusMap = {
+  "todo": "À faire",
+  "in_progress": "En cours",
+  "completed": "Terminé"
+}
 
 const statusColors = {
   "À faire": "bg-gray-100 text-gray-800",
   "En cours": "bg-blue-100 text-blue-800",
   "Terminé": "bg-green-100 text-green-800"
+}
+
+const priorityMap = {
+  "low": "Basse",
+  "medium": "Moyenne",
+  "high": "Haute"
 }
 
 const priorityColors = {
@@ -63,17 +36,23 @@ const priorityColors = {
 }
 
 export default function InternTasks() {
-  const [tasks, setTasks] = useState(mockTasks)
+  const { tasks: dbTasks, loading, updateTaskStatus: updateStatus } = useInternTasks()
   const [selectedTask, setSelectedTask] = useState<any>(null)
   const [filterStatus, setFilterStatus] = useState("Tous")
   const [searchTerm, setSearchTerm] = useState("")
-  const [newTaskDialog, setNewTaskDialog] = useState(false)
-  const [newTask, setNewTask] = useState({
-    title: "",
-    description: "",
-    priority: "Moyenne",
-    dueDate: new Date()
-  })
+
+  // Transform database tasks to display format
+  const tasks = dbTasks.map(task => ({
+    id: task.id,
+    title: task.title,
+    description: task.description || "",
+    status: statusMap[task.status as keyof typeof statusMap],
+    priority: priorityMap[task.priority as keyof typeof priorityMap],
+    dueDate: task.due_date || "",
+    assignedBy: task.supervisor ? `${task.supervisor.first_name} ${task.supervisor.last_name}` : "Non assigné",
+    estimatedHours: task.estimated_hours || 0,
+    completedHours: task.completed_hours || 0
+  }))
 
   const filteredTasks = tasks.filter(task => {
     const matchesStatus = filterStatus === "Tous" || task.status === filterStatus
@@ -89,25 +68,17 @@ export default function InternTasks() {
     }
   }
 
-  const updateTaskStatus = (taskId: number, newStatus: string) => {
-    setTasks(tasks.map(task => 
-      task.id === taskId ? { ...task, status: newStatus } : task
-    ))
-  }
-
-  const createTask = () => {
-    const task = {
-      id: tasks.length + 1,
-      ...newTask,
-      status: "À faire",
-      assignedBy: "Auto-assigné",
-      estimatedHours: 4,
-      completedHours: 0,
-      dueDate: format(newTask.dueDate, "yyyy-MM-dd")
+  const handleUpdateTaskStatus = async (taskId: string, currentStatus: string) => {
+    let newStatus = ""
+    if (currentStatus === "À faire") {
+      newStatus = "in_progress"
+    } else if (currentStatus === "En cours") {
+      newStatus = "completed"
     }
-    setTasks([...tasks, task])
-    setNewTask({ title: "", description: "", priority: "Moyenne", dueDate: new Date() })
-    setNewTaskDialog(false)
+    
+    if (newStatus) {
+      await updateStatus(taskId, newStatus)
+    }
   }
 
   const taskStats = {
@@ -117,82 +88,19 @@ export default function InternTasks() {
     pending: tasks.filter(t => t.status === "À faire").length
   }
 
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-96">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Mes Tâches</h1>
-          <p className="text-muted-foreground">Gérez vos tâches et suivez votre progression</p>
-        </div>
-        
-        <Dialog open={newTaskDialog} onOpenChange={setNewTaskDialog}>
-          <DialogTrigger asChild>
-            <Button className="btn-brand">
-              <Plus className="h-4 w-4 mr-2" />
-              Nouvelle Tâche
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Créer une nouvelle tâche</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="title">Titre</Label>
-                <Input
-                  id="title"
-                  value={newTask.title}
-                  onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                  placeholder="Titre de la tâche"
-                />
-              </div>
-              <div>
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={newTask.description}
-                  onChange={(e) => setNewTask({...newTask, description: e.target.value})}
-                  placeholder="Description détaillée"
-                />
-              </div>
-              <div>
-                <Label>Priorité</Label>
-                <Select value={newTask.priority} onValueChange={(value) => setNewTask({...newTask, priority: value})}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Basse">Basse</SelectItem>
-                    <SelectItem value="Moyenne">Moyenne</SelectItem>
-                    <SelectItem value="Haute">Haute</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label>Date d'échéance</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button variant="outline" className="w-full justify-start text-left">
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {format(newTask.dueDate, "PPP", { locale: fr })}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="start">
-                    <Calendar
-                      mode="single"
-                      selected={newTask.dueDate}
-                      onSelect={(date) => date && setNewTask({...newTask, dueDate: date})}
-                      initialFocus
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              <Button onClick={createTask} className="w-full btn-brand">
-                Créer la tâche
-              </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+      <div>
+        <h1 className="text-3xl font-bold">Mes Tâches</h1>
+        <p className="text-muted-foreground">Gérez vos tâches et suivez votre progression</p>
       </div>
 
       {/* Stats Dashboard */}
@@ -295,7 +203,7 @@ export default function InternTasks() {
                   <Button 
                     variant="outline" 
                     size="sm"
-                    onClick={() => updateTaskStatus(task.id, task.status === "À faire" ? "En cours" : "Terminé")}
+                    onClick={() => handleUpdateTaskStatus(task.id, task.status)}
                   >
                     {task.status === "À faire" ? "Commencer" : "Terminer"}
                   </Button>
