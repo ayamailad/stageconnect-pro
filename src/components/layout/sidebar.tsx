@@ -40,7 +40,6 @@ export function Sidebar() {
       case 'supervisor':
         return [
           { icon: LayoutDashboard, label: "Tableau de bord", href: "/supervisor/dashboard" },
-          { icon: Users, label: "Mes Stagiaires", href: "/supervisor/interns" },
           { icon: BookOpen, label: "Thèmes", href: "/supervisor/themes" },
           { icon: ClipboardList, label: "Tâches", href: "/supervisor/tasks" },
           { icon: Calendar, label: "Présences", href: "/supervisor/attendance" }

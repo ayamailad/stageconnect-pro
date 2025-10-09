@@ -11,7 +11,6 @@ import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
-import SupervisorInterns from "./pages/supervisor/Interns";
 import SupervisorThemes from "./pages/supervisor/Themes";
 import SupervisorTasks from "./pages/supervisor/Tasks";
 import SupervisorAttendance from "./pages/supervisor/Attendance";
@@ -78,15 +77,7 @@ const App = () => (
               } 
             />
             <Route 
-              path="/supervisor/interns" 
-              element={
-                <DashboardLayout>
-                  <SupervisorInterns />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/supervisor/themes" 
+              path="/supervisor/themes"
               element={
                 <DashboardLayout>
                   <SupervisorThemes />
