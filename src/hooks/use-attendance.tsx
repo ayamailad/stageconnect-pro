@@ -84,7 +84,7 @@ export const useAttendance = () => {
           )
         `)
         .eq("supervisor_id", profileId)
-        .eq("status", "in_progress")
+        .not("intern_id", "is", null)
 
       if (error) throw error
 
