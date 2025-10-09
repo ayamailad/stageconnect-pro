@@ -14,9 +14,16 @@ import {
   BookOpen
 } from "lucide-react"
 import { useAuth } from "@/hooks/use-auth"
+import { useInternTasks } from "@/hooks/use-intern-tasks"
+import { useInternAttendance } from "@/hooks/use-intern-attendance"
+import { useNavigate } from "react-router-dom"
+import { useMemo } from "react"
 
 export default function Dashboard() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const { tasks, loading: tasksLoading } = useInternTasks()
+  const { attendance, internship, loading: attendanceLoading } = useInternAttendance()
 
   // Mock data - remplacer par de vraies données API
   const mockStats = {
@@ -107,81 +114,136 @@ export default function Dashboard() {
     </div>
   )
 
-  const renderInternDashboard = () => (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Voici votre progression de stage</p>
+  const renderInternDashboard = () => {
+    const completedTasks = tasks.filter(t => t.status === 'completed').length
+    const totalTasks = tasks.length
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
+    
+    const presentDays = attendance.filter(a => a.status === 'present').length
+    const totalDays = attendance.length
+    const attendanceRate = totalDays > 0 ? Math.round((presentDays / totalDays) * 100) : 0
+
+    return (
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Bienvenue, {user?.name} !</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Voici votre progression de stage</p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+          <Card className="card-gradient">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg">Mon Stage</CardTitle>
+              <CardDescription className="text-xs sm:text-sm">Informations générales</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-2 sm:space-y-3">
+              {attendanceLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              ) : internship ? (
+                <>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Thème</p>
+                    <p className="font-medium">{internship.theme?.description || 'Non assigné'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Superviseur</p>
+                    <p className="font-medium">
+                      {internship.supervisor?.first_name} {internship.supervisor?.last_name}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground">Période</p>
+                    <p className="font-medium text-xs">
+                      {new Date(internship.start_date).toLocaleDateString('fr-FR')} - {new Date(internship.end_date).toLocaleDateString('fr-FR')}
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p className="text-sm text-muted-foreground">Aucun stage assigné</p>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="card-gradient">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                Mes Tâches
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 sm:space-y-3">
+              {tasksLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-primary">
+                      {completedTasks}/{totalTasks}
+                    </span>
+                    {totalTasks > 0 && (
+                      <Badge variant="secondary" className="bg-success/10 text-success">
+                        {completionRate}%
+                      </Badge>
+                    )}
+                  </div>
+                  {totalTasks > 0 && (
+                    <Progress 
+                      value={completionRate} 
+                      className="h-2"
+                    />
+                  )}
+                  <Button 
+                    className="w-full btn-brand" 
+                    size="sm"
+                    onClick={() => navigate('/intern/tasks')}
+                  >
+                    Voir Mes Tâches
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card className="card-gradient">
+            <CardHeader className="pb-2 sm:pb-3">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                Présence
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2 sm:space-y-3">
+              {attendanceLoading ? (
+                <p className="text-sm text-muted-foreground">Chargement...</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <span className="text-2xl font-bold text-primary">
+                      {attendanceRate}%
+                    </span>
+                    {totalDays > 0 && (
+                      <Badge variant="secondary" className={attendanceRate >= 80 ? "bg-success/10 text-success" : "bg-warning/10 text-warning"}>
+                        {attendanceRate >= 80 ? 'Excellent' : 'À améliorer'}
+                      </Badge>
+                    )}
+                  </div>
+                  <div className="text-sm text-muted-foreground">
+                    {presentDays} jours présents / {totalDays} jours
+                  </div>
+                  <Button 
+                    className="w-full btn-brand" 
+                    size="sm"
+                    onClick={() => navigate('/intern/attendance')}
+                  >
+                    Voir Présence
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </div>
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-        <Card className="card-gradient">
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="text-base sm:text-lg">Mon Stage</CardTitle>
-            <CardDescription className="text-xs sm:text-sm">Informations générales</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3">
-            <div>
-              <p className="text-sm text-muted-foreground">Thème</p>
-              <p className="font-medium">{mockStats.intern.currentTheme}</p>
-            </div>
-            <div>
-              <p className="text-sm text-muted-foreground">Superviseur</p>
-              <p className="font-medium">{mockStats.intern.supervisor}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Target className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              Mes Tâches
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-primary">
-                {mockStats.intern.tasksCompleted}/{mockStats.intern.totalTasks}
-              </span>
-              <Badge variant="secondary" className="bg-success/10 text-success">
-                {Math.round((mockStats.intern.tasksCompleted / mockStats.intern.totalTasks) * 100)}%
-              </Badge>
-            </div>
-            <Progress 
-              value={(mockStats.intern.tasksCompleted / mockStats.intern.totalTasks) * 100} 
-              className="h-2"
-            />
-            <Button className="w-full btn-brand" size="sm">
-              Voir Mes Tâches
-            </Button>
-          </CardContent>
-        </Card>
-
-        <Card className="card-gradient">
-          <CardHeader className="pb-2 sm:pb-3">
-            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
-              <Calendar className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              Présence
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 sm:space-y-3">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold text-primary">
-                {mockStats.intern.attendanceRate}%
-              </span>
-              <Badge variant="secondary" className="bg-success/10 text-success">
-                Excellent
-              </Badge>
-            </div>
-            <Button className="w-full btn-brand" size="sm">
-              Pointer Aujourd'hui
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    </div>
-  )
+    )
+  }
 
   const renderSupervisorDashboard = () => (
     <div className="space-y-4 sm:space-y-6 animate-fade-in">
