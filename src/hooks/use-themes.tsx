@@ -10,6 +10,7 @@ interface ThemeWithStats {
   status: string
   created_at: string
   updated_at: string
+  member_internship_ids: string[]
   assignedInterns: number
   totalTasks: number
   completedTasks: number
