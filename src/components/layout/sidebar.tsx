@@ -50,9 +50,7 @@ export function Sidebar() {
         return [
           { icon: LayoutDashboard, label: "Tableau de bord", href: "/intern/dashboard" },
           { icon: Target, label: "Mes Tâches", href: "/intern/tasks" },
-          { icon: FileText, label: "Mon Stage", href: "/intern/internship" },
-          { icon: Calendar, label: "Pointage", href: "/intern/attendance" },
-          { icon: UserCheck, label: "Mon Profil", href: "/intern/profile" }
+          { icon: Calendar, label: "Pointage", href: "/intern/attendance" }
         ]
       
       default: // candidate

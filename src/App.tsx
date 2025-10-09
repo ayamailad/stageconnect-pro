@@ -16,9 +16,7 @@ import SupervisorThemes from "./pages/supervisor/Themes";
 import SupervisorTasks from "./pages/supervisor/Tasks";
 import SupervisorAttendance from "./pages/supervisor/Attendance";
 import InternTasks from "./pages/intern/Tasks";
-import InternInternship from "./pages/intern/Internship";
 import InternAttendance from "./pages/intern/Attendance";
-import InternProfile from "./pages/intern/Profile";
 import Users from "./pages/admin/Users";
 import Applications from "./pages/admin/Applications";
 import Internships from "./pages/admin/Internships";
@@ -174,26 +172,10 @@ const App = () => (
               } 
             />
             <Route 
-              path="/intern/internship" 
-              element={
-                <DashboardLayout>
-                  <InternInternship />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
               path="/intern/attendance" 
               element={
                 <DashboardLayout>
                   <InternAttendance />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/intern/profile" 
-              element={
-                <DashboardLayout>
-                  <InternProfile />
                 </DashboardLayout>
               } 
             />
