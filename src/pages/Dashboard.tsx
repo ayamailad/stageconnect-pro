@@ -20,6 +20,9 @@ import { useInternAttendance } from "@/hooks/use-intern-attendance"
 import { useUsers } from "@/hooks/use-users"
 import { useApplications } from "@/hooks/use-applications"
 import { useInternships } from "@/hooks/use-internships"
+import { useTasks } from "@/hooks/use-tasks"
+import { useAttendance } from "@/hooks/use-attendance"
+import { useThemes } from "@/hooks/use-themes"
 import { useNavigate } from "react-router-dom"
 import { useMemo } from "react"
 import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Legend } from "recharts"
@@ -32,6 +35,9 @@ export default function Dashboard() {
   const { users, loading: usersLoading } = useUsers()
   const { applications, loading: applicationsLoading, getApplicationStats } = useApplications()
   const { internships, loading: internshipsLoading } = useInternships()
+  const { tasks: supervisorTasks, loading: supervisorTasksLoading } = useTasks()
+  const { attendance: supervisorAttendance, interns, loading: supervisorAttendanceLoading } = useAttendance()
+  const { themes, loading: themesLoading } = useThemes()
 
   // Mock data - remplacer par de vraies données API
   const mockStats = {
@@ -344,38 +350,201 @@ export default function Dashboard() {
     )
   }
 
-  const renderSupervisorDashboard = () => (
-    <div className="space-y-4 sm:space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Superviseur</h1>
-        <p className="text-muted-foreground text-sm sm:text-base">Gérez vos stagiaires et leurs projets</p>
-      </div>
+  const renderSupervisorDashboard = () => {
+    const totalInterns = interns.length
+    const activeThemes = themes.filter(t => t.status === 'active').length
+    const pendingTasks = supervisorTasks.filter(t => t.status !== 'completed').length
+    const completedTasks = supervisorTasks.filter(t => t.status === 'completed').length
+    const totalTasks = supervisorTasks.length
+    const completionRate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-        {[
-          { title: "Stagiaires", value: mockStats.supervisor.totalInterns, icon: Users, color: "text-blue-600" },
-          { title: "Thèmes Actifs", value: mockStats.supervisor.activeThemes, icon: BookOpen, color: "text-green-600" },
-          { title: "Tâches en Attente", value: mockStats.supervisor.pendingTasks, icon: Clock, color: "text-warning" },
-          { title: "Tâches Terminées", value: mockStats.supervisor.completedTasks, icon: CheckCircle, color: "text-success" }
-        ].map((stat, index) => {
-          const Icon = stat.icon
-          return (
-            <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
-              <CardContent className="p-4 sm:p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
-                    <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
-                  </div>
-                  <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
-                </div>
-              </CardContent>
-            </Card>
-          )
-        })}
+    // Tasks chart data
+    const tasksChartData = [
+      { name: 'À faire', value: supervisorTasks.filter(t => t.status === 'todo').length, fill: 'hsl(var(--muted))' },
+      { name: 'En cours', value: supervisorTasks.filter(t => t.status === 'in_progress').length, fill: 'hsl(var(--primary))' },
+      { name: 'Terminées', value: completedTasks, fill: 'hsl(var(--success))' }
+    ].filter(item => item.value > 0)
+
+    // Themes chart data
+    const themesChartData = [
+      { name: 'Actif', value: themes.filter(t => t.status === 'active').length, fill: 'hsl(var(--success))' },
+      { name: 'Inactif', value: themes.filter(t => t.status !== 'active').length, fill: 'hsl(var(--muted))' }
+    ].filter(item => item.value > 0)
+
+    // Attendance by intern
+    const attendanceByIntern = useMemo(() => {
+      return interns.slice(0, 5).map(intern => {
+        const internAttendance = supervisorAttendance.filter(a => a.intern_id === intern.id)
+        const presentCount = internAttendance.filter(a => a.status === 'present').length
+        const totalCount = internAttendance.length
+        const rate = totalCount > 0 ? Math.round((presentCount / totalCount) * 100) : 0
+        
+        return {
+          name: `${intern.first_name} ${intern.last_name}`,
+          rate
+        }
+      })
+    }, [interns, supervisorAttendance])
+
+    return (
+      <div className="space-y-4 sm:space-y-6 animate-fade-in">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold mb-2">Tableau de Bord Superviseur</h1>
+          <p className="text-muted-foreground text-sm sm:text-base">Gérez vos stagiaires et leurs projets</p>
+        </div>
+
+        {(supervisorTasksLoading || supervisorAttendanceLoading || themesLoading) ? (
+          <p className="text-sm text-muted-foreground">Chargement...</p>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[
+                { title: "Stagiaires", value: totalInterns, icon: Users, color: "text-blue-600" },
+                { title: "Thèmes Actifs", value: activeThemes, icon: BookOpen, color: "text-green-600" },
+                { title: "Tâches en Attente", value: pendingTasks, icon: Clock, color: "text-warning" },
+                { title: "Tâches Terminées", value: completedTasks, icon: CheckCircle, color: "text-success" }
+              ].map((stat, index) => {
+                const Icon = stat.icon
+                return (
+                  <Card key={index} className="card-gradient hover:shadow-brand transition-all duration-300">
+                    <CardContent className="p-4 sm:p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-xs sm:text-sm text-muted-foreground">{stat.title}</p>
+                          <p className="text-xl sm:text-2xl font-bold text-primary">{stat.value}</p>
+                        </div>
+                        <Icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
+                      </div>
+                    </CardContent>
+                  </Card>
+                )
+              })}
+            </div>
+
+            {/* Charts section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Tasks breakdown chart */}
+              {tasksChartData.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Répartition des Tâches</CardTitle>
+                    <CardDescription>
+                      {completedTasks}/{totalTasks} tâches terminées ({completionRate}%)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        todo: { label: "À faire", color: "hsl(var(--muted))" },
+                        in_progress: { label: "En cours", color: "hsl(var(--primary))" },
+                        completed: { label: "Terminées", color: "hsl(var(--success))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <PieChart>
+                        <Pie
+                          data={tasksChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label
+                        >
+                          {tasksChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend />
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Themes chart */}
+              {themesChartData.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Statut des Thèmes</CardTitle>
+                    <CardDescription>
+                      {themes.length} thème{themes.length > 1 ? 's' : ''} au total
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        active: { label: "Actif", color: "hsl(var(--success))" },
+                        inactive: { label: "Inactif", color: "hsl(var(--muted))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <PieChart>
+                        <Pie
+                          data={themesChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label
+                        >
+                          {themesChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend />
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+
+            {/* Attendance by intern bar chart */}
+            {attendanceByIntern.length > 0 && (
+              <Card className="card-gradient">
+                <CardHeader>
+                  <CardTitle className="text-base sm:text-lg">Taux de Présence par Stagiaire</CardTitle>
+                  <CardDescription>Top 5 stagiaires</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ChartContainer
+                    config={{
+                      rate: { label: "Taux de présence (%)", color: "hsl(var(--primary))" }
+                    }}
+                    className="h-[250px] w-full"
+                  >
+                    <BarChart data={attendanceByIntern}>
+                      <XAxis 
+                        dataKey="name" 
+                        tick={{ fontSize: 12 }}
+                        angle={-45}
+                        textAnchor="end"
+                        height={80}
+                      />
+                      <YAxis domain={[0, 100]} />
+                      <ChartTooltip 
+                        content={<ChartTooltipContent />}
+                        formatter={(value) => [`${value}%`, 'Taux de présence']}
+                      />
+                      <Bar 
+                        dataKey="rate" 
+                        fill="hsl(var(--primary))" 
+                        radius={[4, 4, 0, 0]}
+                      />
+                    </BarChart>
+                  </ChartContainer>
+                </CardContent>
+              </Card>
+            )}
+          </>
+        )}
       </div>
-    </div>
-  )
+    )
+  }
 
   const renderAdminDashboard = () => {
     const applicationStats = getApplicationStats()
