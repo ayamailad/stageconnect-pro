@@ -236,47 +236,6 @@ export default function InternAttendance() {
         </CardContent>
       </Card>
 
-      {/* Monthly Calendar View */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Vue mensuelle</CardTitle>
-          <CardDescription>Aperçu de votre assiduité sur le mois</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <Calendar
-            mode="single"
-            selected={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            className="rounded-md border pointer-events-auto"
-            locale={fr}
-            disabled={(date) => !isInInternshipPeriod(date)}
-            modifiers={{
-              present: (date) => {
-                const att = getAttendanceForDate(date)
-                return att?.status === "present"
-              },
-              absent: (date) => {
-                const att = getAttendanceForDate(date)
-                return att?.status === "absent"
-              },
-              late: (date) => {
-                const att = getAttendanceForDate(date)
-                return att?.status === "late"
-              },
-              justified: (date) => {
-                const att = getAttendanceForDate(date)
-                return att?.status === "justified"
-              }
-            }}
-            modifiersClassNames={{
-              present: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100",
-              absent: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100",
-              late: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100",
-              justified: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100"
-            }}
-          />
-        </CardContent>
-      </Card>
     </div>
   )
 }
