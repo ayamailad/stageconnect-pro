@@ -58,7 +58,9 @@ export const useTasks = () => {
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) {
-        if (!user) {
+        // Double-check session; during logout user may still be non-null briefly
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (!sessionData.session || !user) {
           setTasks([])
           return
         }

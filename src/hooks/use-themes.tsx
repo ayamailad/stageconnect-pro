@@ -98,7 +98,9 @@ export const useThemes = () => {
     try {
       const profileId = await getSupervisorProfileId()
       if (!profileId) {
-        if (!user) {
+        // Double-check session; during logout user may still be non-null briefly
+        const { data: sessionData } = await supabase.auth.getSession()
+        if (!sessionData.session || !user) {
           setThemes([])
           return
         }
