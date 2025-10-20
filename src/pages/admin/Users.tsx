@@ -294,9 +294,6 @@ export default function Users() {
                     Téléphone
                   </TableHead>
                   <TableHead className="min-w-[120px] hidden sm:table-cell">
-                    Département
-                  </TableHead>
-                  <TableHead className="min-w-[120px] hidden sm:table-cell">
                     Date de création
                   </TableHead>
                   <TableHead className="min-w-[120px]">Actions</TableHead>
@@ -306,7 +303,7 @@ export default function Users() {
                 {pageItems.length === 0 ? (
                   <TableRow>
                     <TableCell
-                      colSpan={7}
+                      colSpan={6}
                       className="text-center py-8 text-muted-foreground"
                     >
                       {searchTerm || selectedRole !== "all"
@@ -328,9 +325,6 @@ export default function Users() {
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {user.phone || "-"}
-                      </TableCell>
-                      <TableCell className="hidden sm:table-cell">
-                        {user.department || "-"}
                       </TableCell>
                       <TableCell className="hidden sm:table-cell">
                         {new Date(user.created_at).toLocaleDateString("fr-FR")}

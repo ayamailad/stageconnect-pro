@@ -17,7 +17,6 @@ const createUserSchema = z.object({
   role: z.enum(['admin', 'supervisor', 'intern', 'candidate'], {
     required_error: "Le rôle est requis"
   }),
-  department: z.string().optional(),
   password: z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères").max(100, "Le mot de passe ne peut pas dépasser 100 caractères")
 })
 
@@ -29,8 +28,7 @@ const updateUserSchema = z.object({
   phone: z.string().optional(),
   role: z.enum(['admin', 'supervisor', 'intern', 'candidate'], {
     required_error: "Le rôle est requis"
-  }),
-  department: z.string().optional()
+  })
 })
 
 type CreateUserFormData = z.infer<typeof createUserSchema>
@@ -54,15 +52,13 @@ export function UserForm({ user, onSubmit, onCancel, isLoading = false }: UserFo
       last_name: user.last_name,
       email: user.email,
       phone: user.phone || '',
-      role: user.role,
-      department: user.department || ''
+      role: user.role
     } : {
       first_name: '',
       last_name: '',
       email: '',
       phone: '',
-      role: undefined,
-      department: ''
+      role: undefined
     }
   })
 
@@ -177,20 +173,6 @@ export function UserForm({ user, onSubmit, onCancel, isLoading = false }: UserFo
                   <SelectItem value="candidate">{getRoleLabel('candidate')}</SelectItem>
                 </SelectContent>
               </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="department"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Département (optionnel)</FormLabel>
-              <FormControl>
-                <Input placeholder="Informatique, RH, Marketing..." {...field} />
-              </FormControl>
               <FormMessage />
             </FormItem>
           )}
