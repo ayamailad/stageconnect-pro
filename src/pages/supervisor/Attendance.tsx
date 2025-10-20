@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -30,13 +30,35 @@ export default function Attendance() {
     notes: ""
   })
 
-  const filteredAttendance = attendance.filter(record => {
-    const internName = record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : ""
-    const matchesSearch = internName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || record.status === selectedStatus
-    const matchesDate = selectedDate === "" || record.date === selectedDate
-    return matchesSearch && matchesStatus && matchesDate
-  })
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1) // pages 1-based
+  const [pageSize, setPageSize] = useState(10)
+
+  // Filters
+  const filteredAttendance = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return attendance.filter(record => {
+      const internName = record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : ""
+      const matchesSearch = internName.toLowerCase().includes(term)
+      const matchesStatus = selectedStatus === "all" || record.status === selectedStatus
+      const matchesDate = selectedDate === "" || record.date === selectedDate
+      return matchesSearch && matchesStatus && matchesDate
+    })
+  }, [attendance, searchTerm, selectedStatus, selectedDate])
+
+  // Pagination calculations
+  const totalItems = filteredAttendance.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const clampedPage = Math.min(currentPage, totalPages)
+  if (clampedPage !== currentPage) {
+    setCurrentPage(clampedPage)
+  }
+  const firstIndex = (clampedPage - 1) * pageSize
+  const lastIndex = firstIndex + pageSize
+  const pageItems = filteredAttendance.slice(firstIndex, lastIndex)
+
+  const canPrevious = clampedPage > 1
+  const canNext = clampedPage < totalPages
 
   const handleCreateAttendance = async () => {
     if (!formData.intern_id || !formData.date) {
@@ -46,10 +68,9 @@ export default function Attendance() {
     // Validate date is not in the future
     const today = new Date()
     today.setHours(0, 0, 0, 0)
-    const selectedDate = new Date(formData.date)
-    selectedDate.setHours(0, 0, 0, 0)
-    
-    if (selectedDate > today) {
+    const chosen = new Date(formData.date)
+    chosen.setHours(0, 0, 0, 0)
+    if (chosen > today) {
       toast({
         title: "Erreur",
         description: "Vous ne pouvez pas enregistrer une présence pour une date future",
@@ -59,7 +80,7 @@ export default function Attendance() {
     }
 
     // Validate not weekend
-    const dayOfWeek = selectedDate.getDay()
+    const dayOfWeek = chosen.getDay()
     if (dayOfWeek === 0 || dayOfWeek === 6) {
       toast({
         title: "Erreur",
@@ -72,11 +93,9 @@ export default function Attendance() {
     // Validate date is within internship period
     const intern = interns.find(i => i.id === formData.intern_id)
     if (intern?.internship) {
-      const date = formData.date
       const startDate = new Date(intern.internship.start_date)
       const endDate = new Date(intern.internship.end_date)
-      
-      if (date < startDate || date > endDate) {
+      if (chosen < startDate || chosen > endDate) {
         toast({
           title: "Erreur",
           description: "La date doit être dans la période du stage",
@@ -96,17 +115,16 @@ export default function Attendance() {
     if (success) {
       setIsCreateDialogOpen(false)
       resetForm()
+      setCurrentPage(1) // revenir au début pour visualiser la nouvelle ligne
     }
   }
 
   const handleEditAttendance = async () => {
     if (!selectedRecord) return
-
     const success = await updateAttendance(selectedRecord.id, {
       status: formData.status,
       notes: formData.notes || null
     })
-
     if (success) {
       setIsEditDialogOpen(false)
       setSelectedRecord(null)
@@ -115,7 +133,12 @@ export default function Attendance() {
   }
 
   const handleDeleteAttendance = async (id: string) => {
-    await deleteAttendance(id)
+    const success = await deleteAttendance(id)
+    if (success) {
+      const newTotal = totalItems - 1
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize))
+      if (currentPage > newTotalPages) setCurrentPage(newTotalPages)
+    }
   }
 
   const openEditDialog = (record: any) => {
@@ -169,7 +192,8 @@ export default function Attendance() {
   }
 
   // Calculate stats for today
-  const todayRecords = attendance.filter(record => record.date === new Date().toISOString().split('T')[0])
+  const todayISO = new Date().toISOString().split('T')[0]
+  const todayRecords = attendance.filter(record => record.date === todayISO)
   const presentToday = todayRecords.filter(record => record.status === 'present' || record.status === 'late').length
   const absentToday = todayRecords.filter(record => record.status === 'absent').length
   const lateToday = todayRecords.filter(record => record.status === 'late').length
@@ -249,16 +273,11 @@ export default function Attendance() {
                     onSelect={(date) => setFormData({ ...formData, date })}
                     placeholder="Sélectionner la date"
                     disabledDates={(date) => {
-                      // Block future dates
                       const today = new Date()
                       today.setHours(0, 0, 0, 0)
                       if (date > today) return true
-
-                      // Block weekends (Saturday = 6, Sunday = 0)
                       const dayOfWeek = date.getDay()
                       if (dayOfWeek === 0 || dayOfWeek === 6) return true
-
-                      // Block dates outside internship period
                       if (formData.intern_id) {
                         const intern = interns.find(i => i.id === formData.intern_id)
                         if (intern?.internship) {
@@ -424,11 +443,20 @@ export default function Attendance() {
               <Input
                 placeholder="Rechercher par nom de stagiaire..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1) // reset on search
+                }}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) => {
+                setSelectedStatus(v)
+                setCurrentPage(1) // reset on filter
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -442,16 +470,37 @@ export default function Attendance() {
             </Select>
             <DatePicker
               date={selectedDate ? new Date(selectedDate) : undefined}
-              onSelect={(date) => setSelectedDate(date ? date.toISOString().split('T')[0] : '')}
+              onSelect={(date) => {
+                setSelectedDate(date ? date.toISOString().split('T')[0] : '')
+                setCurrentPage(1) // reset on date change
+              }}
               placeholder="Sélectionner une date"
               className="w-full sm:w-[200px]"
               disabledDates={(date) => {
-                // Block future dates
                 const today = new Date()
                 today.setHours(0, 0, 0, 0)
                 return date > today
               }}
             />
+
+            {/* Choix pageSize */}
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="10 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <Table>
@@ -465,14 +514,16 @@ export default function Attendance() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredAttendance.length === 0 ? (
+              {pageItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    Aucune présence trouvée
+                    {searchTerm || selectedStatus !== "all" || !!selectedDate
+                      ? "Aucune présence ne correspond aux critères"
+                      : "Aucune présence trouvée"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredAttendance.map((record) => (
+                pageItems.map((record) => (
                   <TableRow key={record.id}>
                     <TableCell className="font-medium">
                       {record.intern ? `${record.intern.first_name} ${record.intern.last_name}` : "N/A"}
@@ -511,6 +562,36 @@ export default function Attendance() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-sm text-muted-foreground">
+              {totalItems === 0
+                ? "0 résultat"
+                : `Affichage ${firstIndex + 1}–${Math.min(
+                    lastIndex,
+                    totalItems
+                  )} sur ${totalItems} · Page ${clampedPage}/${totalPages}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={!canPrevious}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={!canNext}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useMemo, useEffect } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -34,101 +34,101 @@ export default function Tasks() {
     due_date: undefined as Date | undefined
   })
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1) // pages 1-based
+  const [pageSize, setPageSize] = useState(10)
+
   // Get available interns based on selected theme
   const getAvailableInterns = () => {
     if (!formData.theme_id) return []
-    
     const selectedTheme = themes.find(t => t.id === formData.theme_id)
     if (!selectedTheme || !selectedTheme.member_internship_ids) return []
-    
-    // Get internships that are part of this theme
-    const themeInternships = internships.filter(i => 
-      selectedTheme.member_internship_ids.includes(i.id)
-    )
-    
-    // Return unique interns
+    const themeInternships = internships.filter(i => selectedTheme.member_internship_ids.includes(i.id))
     return themeInternships
       .filter(i => i.intern)
       .map(i => i.intern!)
-      .filter((intern, index, self) => 
-        index === self.findIndex(t => t.id === intern.id)
-      )
+      .filter((intern, index, self) => index === self.findIndex(t => t.id === intern.id))
   }
 
-  const filteredTasks = tasks.filter(task => {
-    const internName = task.intern ? `${task.intern.first_name} ${task.intern.last_name}` : ""
-    const matchesSearch = task.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         task.description?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         internName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || task.status === selectedStatus
-    const matchesPriority = selectedPriority === "all" || task.priority === selectedPriority
-    return matchesSearch && matchesStatus && matchesPriority
-  })
+  // Filtered tasks (memoized)
+  const filteredTasks = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return tasks.filter(task => {
+      const internName = task.intern ? `${task.intern.first_name} ${task.intern.last_name}` : ""
+      const matchesSearch =
+        task.title.toLowerCase().includes(term) ||
+        task.description?.toLowerCase().includes(term) ||
+        internName.toLowerCase().includes(term)
+      const matchesStatus = selectedStatus === "all" || task.status === selectedStatus
+      const matchesPriority = selectedPriority === "all" || task.priority === selectedPriority
+      return matchesSearch && matchesStatus && matchesPriority
+    })
+  }, [tasks, searchTerm, selectedStatus, selectedPriority])
+
+  // Pagination calculations
+  const totalItems = filteredTasks.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const clampedPage = Math.min(currentPage, totalPages)
+  if (clampedPage !== currentPage) {
+    // Recalage si les filtres réduisent le nombre de pages
+    setCurrentPage(clampedPage)
+  }
+  const firstIndex = (clampedPage - 1) * pageSize
+  const lastIndex = firstIndex + pageSize
+  const pageItems = filteredTasks.slice(firstIndex, lastIndex)
+
+  const canPrevious = clampedPage > 1
+  const canNext = clampedPage < totalPages
 
   const handleCreateTask = async () => {
-    if (!formData.title || !formData.intern_id) {
-      return
-    }
-
-    // Validate due date is within internship period
+    if (!formData.title || !formData.intern_id) return
+    // Validate due date within internship period
     if (formData.due_date) {
       const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
       if (selectedInternship) {
         const dueDate = formData.due_date
         const startDate = new Date(selectedInternship.start_date)
         const endDate = new Date(selectedInternship.end_date)
-        
-        if (dueDate < startDate || dueDate > endDate) {
-          return
-        }
+        if (dueDate < startDate || dueDate > endDate) return
       }
     }
-
     const success = await createTask({
-        title: formData.title,
-        description: formData.description,
-        intern_id: formData.intern_id,
-        theme_id: formData.theme_id,
-        priority: formData.priority,
-        status: formData.status,
-        due_date: formData.due_date
+      title: formData.title,
+      description: formData.description,
+      intern_id: formData.intern_id,
+      theme_id: formData.theme_id,
+      priority: formData.priority,
+      status: formData.status,
+      due_date: formData.due_date
     })
-
     if (success) {
       setIsCreateDialogOpen(false)
       resetForm()
+      setCurrentPage(1) // revenir au début pour voir la nouvelle tâche
     }
   }
 
   const handleEditTask = async () => {
-    if (!selectedTask || !formData.title || !formData.intern_id) {
-      return
-    }
-
-    // Validate due date is within internship period
+    if (!selectedTask || !formData.title || !formData.intern_id) return
+    // Validate due date within internship period
     if (formData.due_date) {
       const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
       if (selectedInternship) {
         const dueDate = formData.due_date
         const startDate = new Date(selectedInternship.start_date)
         const endDate = new Date(selectedInternship.end_date)
-        
-        if (dueDate < startDate || dueDate > endDate) {
-          return
-        }
+        if (dueDate < startDate || dueDate > endDate) return
       }
     }
-
     const success = await updateTask(selectedTask.id, {
-        title: formData.title,
-        description: formData.description,
-        intern_id: formData.intern_id,
-        theme_id: formData.theme_id,
-        priority: formData.priority,
-        status: formData.status,
-        due_date: formData.due_date
+      title: formData.title,
+      description: formData.description,
+      intern_id: formData.intern_id,
+      theme_id: formData.theme_id,
+      priority: formData.priority,
+      status: formData.status,
+      due_date: formData.due_date
     })
-
     if (success) {
       setIsEditDialogOpen(false)
       setSelectedTask(null)
@@ -137,12 +137,17 @@ export default function Tasks() {
   }
 
   const handleDeleteTask = async (id: string) => {
-    await deleteTask(id)
+    const success = await deleteTask(id)
+    if (success) {
+      // Recalage si on supprime le dernier élément de la dernière page
+      const newTotal = totalItems - 1
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize))
+      if (currentPage > newTotalPages) setCurrentPage(newTotalPages)
+    }
   }
 
   const openEditDialog = (task: any) => {
     setSelectedTask(task)
-    
     setFormData({
       title: task.title || "",
       description: task.description || "",
@@ -329,9 +334,7 @@ export default function Tasks() {
                     disabledDates={(date) => {
                       const today = new Date()
                       today.setHours(0, 0, 0, 0)
-                      
                       if (date < today) return true
-                      
                       if (formData.intern_id) {
                         const selectedInternship = internships.find(i => i.intern_id === formData.intern_id)
                         if (selectedInternship) {
@@ -340,7 +343,6 @@ export default function Tasks() {
                           return date < startDate || date > endDate
                         }
                       }
-                      
                       return false
                     }}
                   />
@@ -606,11 +608,20 @@ export default function Tasks() {
               <Input
                 placeholder="Rechercher par titre, description ou assigné..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1) // reset to first page on search
+                }}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) => {
+                setSelectedStatus(v)
+                setCurrentPage(1) // reset on filter
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -622,7 +633,13 @@ export default function Tasks() {
                 <SelectItem value="completed">Terminé</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={selectedPriority} onValueChange={setSelectedPriority}>
+            <Select
+              value={selectedPriority}
+              onValueChange={(v) => {
+                setSelectedPriority(v)
+                setCurrentPage(1) // reset on filter
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Priorité" />
               </SelectTrigger>
@@ -631,6 +648,25 @@ export default function Tasks() {
                 <SelectItem value="high">Élevée</SelectItem>
                 <SelectItem value="medium">Moyenne</SelectItem>
                 <SelectItem value="low">Faible</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Choix pageSize */}
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="10 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -648,16 +684,17 @@ export default function Tasks() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredTasks.length === 0 ? (
+              {pageItems.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
-                    Aucune tâche trouvée
+                    {searchTerm || selectedStatus !== "all" || selectedPriority !== "all"
+                      ? "Aucune tâche ne correspond aux critères de recherche"
+                      : "Aucune tâche trouvée"}
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredTasks.map((task) => {
+                pageItems.map((task) => {
                   const theme = themes.find(t => t.id === task.theme_id)
-                  
                   return (
                     <TableRow key={task.id} className={isOverdue(task.due_date) ? "bg-destructive/5" : ""}>
                       <TableCell>
@@ -724,6 +761,36 @@ export default function Tasks() {
               )}
             </TableBody>
           </Table>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-sm text-muted-foreground">
+              {totalItems === 0
+                ? "0 résultat"
+                : `Affichage ${firstIndex + 1}–${Math.min(
+                    lastIndex,
+                    totalItems
+                  )} sur ${totalItems} · Page ${clampedPage}/${totalPages}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={!canPrevious}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={!canNext}
+              >
+                Suivant
+              </Button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     </div>

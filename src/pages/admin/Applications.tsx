@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -24,45 +24,82 @@ export default function Applications() {
     getApplicationStats 
   } = useApplications()
   const { toast } = useToast()
+
+  // Filtres
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
   const [selectedDepartment, setSelectedDepartment] = useState<string>("all")
+
+  // Détails / actions
   const [selectedApplication, setSelectedApplication] = useState<Application | null>(null)
   const [approveLoading, setApproveLoading] = useState<string | null>(null)
   const [rejectLoading, setRejectLoading] = useState<string | null>(null)
   const [deleteLoading, setDeleteLoading] = useState<string | null>(null)
 
-  const filteredApplications = applications.filter(app => {
-    const matchesSearch = app.candidate_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.candidate_email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         app.position.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || app.status === selectedStatus
-    const matchesDepartment = selectedDepartment === "all" || app.department === selectedDepartment
-    return matchesSearch && matchesStatus && matchesDepartment
-  })
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1) // pages 1-based
+  const [pageSize, setPageSize] = useState(10)
 
-  // Handle approve action
+  // Filtrage mémoïsé
+  const filteredApplications = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return applications.filter(app => {
+      const matchesSearch =
+        app.candidate_name.toLowerCase().includes(term) ||
+        app.candidate_email.toLowerCase().includes(term) ||
+        app.position.toLowerCase().includes(term)
+      const matchesStatus = selectedStatus === "all" || app.status === selectedStatus
+      const matchesDepartment = selectedDepartment === "all" || app.department === selectedDepartment
+      return matchesSearch && matchesStatus && matchesDepartment
+    })
+  }, [applications, searchTerm, selectedStatus, selectedDepartment])
+
+  // Stats et départements
+  const departments = useMemo(
+    () => [...new Set(applications.map(app => app.department))],
+    [applications]
+  )
+  const stats = getApplicationStats()
+
+  // Calcules pagination
+  const totalItems = filteredApplications.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const clampedPage = Math.min(currentPage, totalPages)
+  if (clampedPage !== currentPage) {
+    // Recalage si les filtres réduisent le nombre de pages
+    setCurrentPage(clampedPage)
+  }
+  const firstIndex = (clampedPage - 1) * pageSize
+  const lastIndex = firstIndex + pageSize
+  const pageItems = filteredApplications.slice(firstIndex, lastIndex)
+
+  const canPrevious = clampedPage > 1
+  const canNext = clampedPage < totalPages
+
+  // Actions principales
   const handleApprove = async (applicationId: string) => {
     setApproveLoading(applicationId)
     await approveApplication(applicationId)
     setApproveLoading(null)
   }
 
-  // Handle reject action
   const handleReject = async (applicationId: string) => {
     setRejectLoading(applicationId)
     await rejectApplication(applicationId)
     setRejectLoading(null)
   }
 
-  // Handle delete action
   const handleDelete = async (applicationId: string) => {
     setDeleteLoading(applicationId)
     await deleteApplication(applicationId)
     setDeleteLoading(null)
+    // Recalage éventuel si on supprime le dernier item de la dernière page
+    const newTotal = totalItems - 1
+    const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize))
+    if (currentPage > newTotalPages) setCurrentPage(newTotalPages)
   }
 
-  // Handle file preview
+  // Preview fichier
   const handlePreviewFile = async (filePath: string | undefined, fileName: string) => {
     if (!filePath) {
       toast({
@@ -76,7 +113,7 @@ export default function Applications() {
     try {
       const { data } = await supabase.storage
         .from('applications')
-        .createSignedUrl(filePath, 60) // URL valid for 60 seconds
+        .createSignedUrl(filePath, 60) // URL valide 60s
 
       if (data?.signedUrl) {
         window.open(data.signedUrl, '_blank')
@@ -92,6 +129,7 @@ export default function Applications() {
     }
   }
 
+  // Helpers UI
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'approved': return 'default'
@@ -122,9 +160,7 @@ export default function Applications() {
     }
   }
 
-  const departments = [...new Set(applications.map(app => app.department))]
-  const stats = getApplicationStats()
-
+  // Loading skeleton
   if (loading) {
     return (
       <div className="space-y-4 sm:space-y-6">
@@ -218,7 +254,7 @@ export default function Applications() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des candidatures</CardTitle>
-          <CardDescription>Recherchez et filtrez les candidatures</CardDescription>
+          <CardDescription>Recherchez, filtrez et paginez</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-4 sm:mb-6">
@@ -227,11 +263,20 @@ export default function Applications() {
               <Input
                 placeholder="Rechercher par nom, email ou poste..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1) // reset page
+                }}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) => {
+                setSelectedStatus(v)
+                setCurrentPage(1)
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -243,7 +288,13 @@ export default function Applications() {
                 <SelectItem value="rejected">Rejetée</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={selectedDepartment} onValueChange={setSelectedDepartment}>
+            <Select
+              value={selectedDepartment}
+              onValueChange={(v) => {
+                setSelectedDepartment(v)
+                setCurrentPage(1)
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Département" />
               </SelectTrigger>
@@ -252,6 +303,25 @@ export default function Applications() {
                 {departments.map(dept => (
                   <SelectItem key={dept} value={dept}>{dept}</SelectItem>
                 ))}
+              </SelectContent>
+            </Select>
+
+            {/* Choix pageSize */}
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="10 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -269,170 +339,212 @@ export default function Applications() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredApplications.map((application) => (
-                  <TableRow key={application.id}>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium">{application.candidate_name}</div>
-                        <div className="text-xs sm:text-sm text-muted-foreground break-all">{application.candidate_email}</div>
-                      </div>
+                {pageItems.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                      {searchTerm || selectedStatus !== "all" || selectedDepartment !== "all"
+                        ? "Aucune candidature ne correspond aux critères de recherche"
+                        : "Aucune candidature trouvée"}
                     </TableCell>
-                    <TableCell className="font-medium">{application.position}</TableCell>
-                    <TableCell className="hidden lg:table-cell">{application.department}</TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(application.status)} className="flex items-center gap-1 w-fit">
-                        {getStatusIcon(application.status)}
-                        <span className="hidden sm:inline">{getStatusLabel(application.status)}</span>
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="hidden sm:table-cell">{new Date(application.submitted_at).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Dialog>
-                          <DialogTrigger asChild>
-                            <Button variant="outline" size="sm" onClick={() => setSelectedApplication(application)}>
-                              <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
-                              <span className="hidden sm:inline">Détails</span>
-                            </Button>
-                          </DialogTrigger>
-                        <DialogContent className="max-w-2xl">
-                          <DialogHeader>
-                            <DialogTitle>Détails de la candidature</DialogTitle>
-                            <DialogDescription>
-                              Candidature de {selectedApplication?.candidate_name}
-                            </DialogDescription>
-                          </DialogHeader>
-                          {selectedApplication && (
-                            <div className="space-y-4">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Nom du candidat</Label>
-                                  <p className="text-sm font-medium">{selectedApplication.candidate_name}</p>
-                                </div>
-                                <div>
-                                  <Label>Email</Label>
-                                  <p className="text-sm">{selectedApplication.candidate_email}</p>
-                                </div>
-                                <div>
-                                  <Label>Poste demandé</Label>
-                                  <p className="text-sm font-medium">{selectedApplication.position}</p>
-                                </div>
-                                <div>
-                                  <Label>Département</Label>
-                                  <p className="text-sm">{selectedApplication.department}</p>
-                                </div>
-                              </div>
-                              <div>
-                                <Label>Expérience</Label>
-                                <p className="text-sm mt-1">{selectedApplication.experience}</p>
-                              </div>
-                              <div>
-                                <Label>Motivation</Label>
-                                <p className="text-sm mt-1">{selectedApplication.motivation}</p>
-                              </div>
-                              <div>
-                                <Label>Documents</Label>
-                                <div className="flex flex-wrap gap-2 mt-2">
-                                  {selectedApplication.cv_file_path && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handlePreviewFile(selectedApplication.cv_file_path, 'CV')}
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      CV
-                                    </Button>
-                                  )}
-                                  {selectedApplication.cover_letter_path && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handlePreviewFile(selectedApplication.cover_letter_path, 'Lettre de motivation')}
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Lettre de motivation
-                                    </Button>
-                                  )}
-                                  {selectedApplication.internship_agreement_path && (
-                                    <Button
-                                      variant="outline"
-                                      size="sm"
-                                      onClick={() => handlePreviewFile(selectedApplication.internship_agreement_path, 'Convention de stage')}
-                                    >
-                                      <Download className="h-4 w-4 mr-2" />
-                                      Convention de stage
-                                    </Button>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex gap-2 pt-4">
-                                <Button 
-                                  size="sm" 
-                                  className="flex-1"
-                                  disabled={selectedApplication.status !== 'pending' || approveLoading === selectedApplication.id}
-                                  onClick={() => handleApprove(selectedApplication.id)}
-                                >
-                                  {approveLoading === selectedApplication.id ? (
-                                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
-                                  ) : (
-                                    <Check className="h-4 w-4 mr-2" />
-                                  )}
-                                  Approuver
-                                </Button>
-                                <ConfirmationDialog
-                                  title="Confirmer le rejet"
-                                  description={`Êtes-vous sûr de vouloir rejeter la candidature de ${selectedApplication.candidate_name} ? Cette action ne peut pas être annulée.`}
-                                  onConfirm={() => handleReject(selectedApplication.id)}
-                                  isDestructive={true}
-                                  triggerButton={
+                  </TableRow>
+                ) : (
+                  pageItems.map((application) => (
+                    <TableRow key={application.id}>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium">{application.candidate_name}</div>
+                          <div className="text-xs sm:text-sm text-muted-foreground break-all">{application.candidate_email}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="font-medium">{application.position}</TableCell>
+                      <TableCell className="hidden lg:table-cell">{application.department}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(application.status)} className="flex items-center gap-1 w-fit">
+                          {getStatusIcon(application.status)}
+                          <span className="hidden sm:inline">{getStatusLabel(application.status)}</span>
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="hidden sm:table-cell">
+                        {new Date(application.submitted_at).toLocaleDateString('fr-FR')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-1">
+                          <Dialog>
+                            <DialogTrigger asChild>
+                              <Button variant="outline" size="sm" onClick={() => setSelectedApplication(application)}>
+                                <Eye className="h-3 w-3 sm:h-4 sm:w-4 sm:mr-1" />
+                                <span className="hidden sm:inline">Détails</span>
+                              </Button>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-2xl">
+                              <DialogHeader>
+                                <DialogTitle>Détails de la candidature</DialogTitle>
+                                <DialogDescription>
+                                  Candidature de {selectedApplication?.candidate_name}
+                                </DialogDescription>
+                              </DialogHeader>
+                              {selectedApplication && (
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label>Nom du candidat</Label>
+                                      <p className="text-sm font-medium">{selectedApplication.candidate_name}</p>
+                                    </div>
+                                    <div>
+                                      <Label>Email</Label>
+                                      <p className="text-sm">{selectedApplication.candidate_email}</p>
+                                    </div>
+                                    <div>
+                                      <Label>Poste demandé</Label>
+                                      <p className="text-sm font-medium">{selectedApplication.position}</p>
+                                    </div>
+                                    <div>
+                                      <Label>Département</Label>
+                                      <p className="text-sm">{selectedApplication.department}</p>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <Label>Expérience</Label>
+                                    <p className="text-sm mt-1">{selectedApplication.experience}</p>
+                                  </div>
+                                  <div>
+                                    <Label>Motivation</Label>
+                                    <p className="text-sm mt-1">{selectedApplication.motivation}</p>
+                                  </div>
+                                  <div>
+                                    <Label>Documents</Label>
+                                    <div className="flex flex-wrap gap-2 mt-2">
+                                      {selectedApplication.cv_file_path && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handlePreviewFile(selectedApplication.cv_file_path, 'CV')}
+                                        >
+                                          <Download className="h-4 w-4 mr-2" />
+                                          CV
+                                        </Button>
+                                      )}
+                                      {selectedApplication.cover_letter_path && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handlePreviewFile(selectedApplication.cover_letter_path, 'Lettre de motivation')}
+                                        >
+                                          <Download className="h-4 w-4 mr-2" />
+                                          Lettre de motivation
+                                        </Button>
+                                      )}
+                                      {selectedApplication.internship_agreement_path && (
+                                        <Button
+                                          variant="outline"
+                                          size="sm"
+                                          onClick={() => handlePreviewFile(selectedApplication.internship_agreement_path, 'Convention de stage')}
+                                        >
+                                          <Download className="h-4 w-4 mr-2" />
+                                          Convention de stage
+                                        </Button>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex gap-2 pt-4">
                                     <Button 
-                                      variant="destructive" 
                                       size="sm" 
                                       className="flex-1"
-                                      disabled={selectedApplication.status !== 'pending' || rejectLoading === selectedApplication.id}
+                                      disabled={selectedApplication.status !== 'pending' || approveLoading === selectedApplication.id}
+                                      onClick={() => handleApprove(selectedApplication.id)}
                                     >
-                                      {rejectLoading === selectedApplication.id ? (
+                                      {approveLoading === selectedApplication.id ? (
                                         <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
                                       ) : (
-                                        <X className="h-4 w-4 mr-2" />
+                                        <Check className="h-4 w-4 mr-2" />
                                       )}
-                                      Rejeter
+                                      Approuver
                                     </Button>
-                                  }
-                                />
-                              </div>
-                            </div>
-                          )}
-                        </DialogContent>
-                        </Dialog>
-                        
-                        {application.status === 'pending' && (
+                                    <ConfirmationDialog
+                                      title="Confirmer le rejet"
+                                      description={`Êtes-vous sûr de vouloir rejeter la candidature de ${selectedApplication.candidate_name} ? Cette action ne peut pas être annulée.`}
+                                      onConfirm={() => handleReject(selectedApplication.id)}
+                                      isDestructive={true}
+                                      triggerButton={
+                                        <Button 
+                                          variant="destructive" 
+                                          size="sm" 
+                                          className="flex-1"
+                                          disabled={selectedApplication.status !== 'pending' || rejectLoading === selectedApplication.id}
+                                        >
+                                          {rejectLoading === selectedApplication.id ? (
+                                            <div className="h-4 w-4 animate-spin rounded-full border-2 border-background border-t-transparent" />
+                                          ) : (
+                                            <X className="h-4 w-4 mr-2" />
+                                          )}
+                                          Rejeter
+                                        </Button>
+                                      }
+                                    />
+                                  </div>
+                                </div>
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          {application.status === 'pending' && (
                             <ConfirmationDialog
                               title="Supprimer la candidature"
                               description={`Êtes-vous sûr de vouloir supprimer définitivement la candidature de ${application.candidate_name} ? Cette action ne peut pas être annulée.`}
                               onConfirm={() => handleDelete(application.id)}
                               isDestructive={true}
                               triggerButton={
-                              <Button 
-                                variant="outline" 
-                                size="sm"
-                                disabled={deleteLoading === application.id}
-                              >
-                                {deleteLoading === application.id ? (
-                                  <div className="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
-                                ) : (
-                                  <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
-                                )}
-                              </Button>
-                            }
-                          />
-                        )}
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                ))}
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  disabled={deleteLoading === application.id}
+                                >
+                                  {deleteLoading === application.id ? (
+                                    <div className="h-3 w-3 sm:h-4 sm:w-4 animate-spin rounded-full border-2 border-foreground border-t-transparent" />
+                                  ) : (
+                                    <Trash2 className="h-3 w-3 sm:h-4 sm:w-4" />
+                                  )}
+                                </Button>
+                              }
+                            />
+                          )}
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-sm text-muted-foreground">
+              {totalItems === 0
+                ? "0 résultat"
+                : `Affichage ${firstIndex + 1}–${Math.min(
+                    lastIndex,
+                    totalItems
+                  )} sur ${totalItems} · Page ${clampedPage}/${totalPages}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={!canPrevious}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={!canNext}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

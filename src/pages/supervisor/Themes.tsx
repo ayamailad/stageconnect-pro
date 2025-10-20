@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -29,10 +29,31 @@ export default function Themes() {
     selectedInternships: [] as string[]
   })
 
-  const filteredThemes = themes.filter(theme => {
-    const matchesSearch = theme.description?.toLowerCase().includes(searchTerm.toLowerCase())
-    return matchesSearch
-  })
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1) // pages 1-based
+  const [pageSize, setPageSize] = useState(10)
+
+  const filteredThemes = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return themes.filter(theme => {
+      const matchesSearch = theme.description?.toLowerCase().includes(term)
+      return matchesSearch
+    })
+  }, [themes, searchTerm])
+
+  // Pagination calculations
+  const totalItems = filteredThemes.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const clampedPage = Math.min(currentPage, totalPages)
+  if (clampedPage !== currentPage) {
+    setCurrentPage(clampedPage)
+  }
+  const firstIndex = (clampedPage - 1) * pageSize
+  const lastIndex = firstIndex + pageSize
+  const pageItems = filteredThemes.slice(firstIndex, lastIndex)
+
+  const canPrevious = clampedPage > 1
+  const canNext = clampedPage < totalPages
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -53,33 +74,26 @@ export default function Themes() {
   }
 
   const handleCreateTheme = async () => {
-    if (!formData.description) {
-      return
-    }
-
+    if (!formData.description) return
     const success = await createTheme({
       description: formData.description,
       status: formData.status,
       internshipIds: formData.selectedInternships
     })
-
     if (success) {
       setIsCreateDialogOpen(false)
       setFormData({ description: "", status: "active", selectedInternships: [] })
+      setCurrentPage(1)
     }
   }
 
   const handleEditTheme = async () => {
-    if (!editingTheme || !formData.description) {
-      return
-    }
-
+    if (!editingTheme || !formData.description) return
     const success = await updateTheme(editingTheme.id, {
       description: formData.description,
       status: formData.status,
       internshipIds: formData.selectedInternships
     })
-
     if (success) {
       setIsEditDialogOpen(false)
       setEditingTheme(null)
@@ -88,14 +102,17 @@ export default function Themes() {
   }
 
   const handleDeleteTheme = async (id: string) => {
-    await deleteTheme(id)
+    const success = await deleteTheme(id)
+    if (success) {
+      const newTotal = totalItems - 1
+      const newTotalPages = Math.max(1, Math.ceil(newTotal / pageSize))
+      if (currentPage > newTotalPages) setCurrentPage(newTotalPages)
+    }
   }
 
   const openEditDialog = (theme: any) => {
     setEditingTheme(theme)
-    // Get internships from the member_internship_ids array stored in the theme
     const assignedInternships = theme.member_internship_ids || []
-    
     setFormData({
       description: theme.description || "",
       status: theme.status || "active",
@@ -359,72 +376,128 @@ export default function Themes() {
               <Input
                 placeholder="Rechercher par description..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1) // reset page on search
+                }}
                 className="pl-10"
               />
             </div>
+
+            {/* Choix pageSize */}
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="10 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           {loading ? (
             <div className="flex justify-center items-center py-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
             </div>
-          ) : filteredThemes.length === 0 ? (
+          ) : pageItems.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-muted-foreground">Aucun thème trouvé</p>
+              <p className="text-muted-foreground">
+                {searchTerm ? "Aucun thème ne correspond aux critères de recherche" : "Aucun thème trouvé"}
+              </p>
             </div>
           ) : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Description</TableHead>
-                  <TableHead>Stagiaires</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredThemes.map((theme) => (
-                  <TableRow key={theme.id}>
-                    <TableCell>
-                      <div className="font-medium">{theme.description}</div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{theme.assignedInterns}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getStatusBadgeVariant(theme.status)}>
-                        {getStatusLabel(theme.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex space-x-2">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <ConfirmationDialog
-                          title="Supprimer le thème"
-                          description="Êtes-vous sûr de vouloir supprimer ce thème ? Cette action est irréversible."
-                          onConfirm={() => handleDeleteTheme(theme.id)}
-                          isDestructive
-                          triggerButton={
-                            <Button variant="outline" size="sm">
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          }
-                        />
-                      </div>
-                    </TableCell>
+            <>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Description</TableHead>
+                    <TableHead>Stagiaires</TableHead>
+                    <TableHead>Statut</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {pageItems.map((theme) => (
+                    <TableRow key={theme.id}>
+                      <TableCell>
+                        <div className="font-medium">{theme.description}</div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Users className="h-4 w-4 text-muted-foreground" />
+                          <span>{theme.assignedInterns}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(theme.status)}>
+                          {getStatusLabel(theme.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex space-x-2">
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button variant="outline" size="sm" onClick={() => openEditDialog(theme)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <ConfirmationDialog
+                            title="Supprimer le thème"
+                            description="Êtes-vous sûr de vouloir supprimer ce thème ? Cette action est irréversible."
+                            onConfirm={() => handleDeleteTheme(theme.id)}
+                            isDestructive
+                            triggerButton={
+                              <Button variant="outline" size="sm">
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            }
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+
+              {/* Pagination Footer */}
+              <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+                <div className="text-sm text-muted-foreground">
+                  {totalItems === 0
+                    ? "0 résultat"
+                    : `Affichage ${firstIndex + 1}–${Math.min(
+                        lastIndex,
+                        totalItems
+                      )} sur ${totalItems} · Page ${clampedPage}/${totalPages}`}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={!canPrevious}
+                  >
+                    Précédent
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={!canNext}
+                  >
+                    Suivant
+                  </Button>
+                </div>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

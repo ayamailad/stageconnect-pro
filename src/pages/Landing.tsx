@@ -102,7 +102,7 @@ export default function Landing() {
       <section className="py-20 px-4" style={{ background: 'linear-gradient(135deg, hsl(45, 25%, 98%), hsl(45, 15%, 96%))' }}>
         <div className="container">
           <div className="text-center mb-16 animate-fade-in">
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
+            <h2 className="text-3xl md:text-4xl font-bold mb-4 text-black">
               Pourquoi choisir{" "}
               <span className="bg-gradient-to-r from-primary to-brand-secondary bg-clip-text text-transparent">
                 InternFlow

@@ -34,7 +34,7 @@ export function Sidebar() {
           { icon: Users, label: "Utilisateurs", href: "/admin/users" },
           { icon: FileText, label: "Candidatures", href: "/admin/applications" },
           { icon: GraduationCap, label: "Stages", href: "/admin/internships" },
-          { icon: Settings, label: "Paramètres", href: "/admin/settings" }
+
         ]
       
       case 'supervisor':

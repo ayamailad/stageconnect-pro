@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useMemo } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
@@ -27,9 +27,19 @@ export default function Internships() {
   const [selectedSupervisorId, setSelectedSupervisorId] = useState("")
   const [selectedInternshipId, setSelectedInternshipId] = useState("")
 
+  // Pagination
+  const [currentPage, setCurrentPage] = useState(1) // pages 1-based
+  const [pageSize, setPageSize] = useState(10)
+
   // Supervisors and available internships
-  const supervisors = users.filter(u => u.role === 'supervisor')
-  const availableInternships = internships.filter(i => i.status === 'available')
+  const supervisors = useMemo(
+    () => users.filter(u => u.role === 'supervisor'),
+    [users]
+  )
+  const availableInternships = useMemo(
+    () => internships.filter(i => i.status === 'available'),
+    [internships]
+  )
 
   const handleAssignSupervisor = async () => {
     if (!selectedSupervisorId || !selectedInternshipId) return
@@ -45,6 +55,7 @@ export default function Internships() {
       setIsAssignOpen(false)
       setSelectedSupervisorId("")
       setSelectedInternshipId("")
+      setCurrentPage(1) // revenir au début pour voir le changement
     }
   }
 
@@ -73,18 +84,37 @@ export default function Internships() {
     setIsViewOpen(true)
   }
 
-  const filteredInternships = internships.filter(internship => {
-    const supervisorName = internship.supervisor 
-      ? `${internship.supervisor.first_name} ${internship.supervisor.last_name}` 
-      : ""
-    const internName = internship.intern 
-      ? `${internship.intern.first_name} ${internship.intern.last_name}` 
-      : ""
-    const matchesSearch = supervisorName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         internName.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = selectedStatus === "all" || internship.status === selectedStatus
-    return matchesSearch && matchesStatus
-  })
+  // Filtrage mémoïsé
+  const filteredInternships = useMemo(() => {
+    const term = searchTerm.toLowerCase()
+    return internships.filter(internship => {
+      const supervisorName = internship.supervisor 
+        ? `${internship.supervisor.first_name} ${internship.supervisor.last_name}` 
+        : ""
+      const internName = internship.intern 
+        ? `${internship.intern.first_name} ${internship.intern.last_name}` 
+        : ""
+      const matchesSearch = supervisorName.toLowerCase().includes(term) ||
+                            internName.toLowerCase().includes(term)
+      const matchesStatus = selectedStatus === "all" || internship.status === selectedStatus
+      return matchesSearch && matchesStatus
+    })
+  }, [internships, searchTerm, selectedStatus])
+
+  // Calcul pagination
+  const totalItems = filteredInternships.length
+  const totalPages = Math.max(1, Math.ceil(totalItems / pageSize))
+  const clampedPage = Math.min(currentPage, totalPages)
+  if (clampedPage !== currentPage) {
+    // Recalage si les filtres réduisent le nombre de pages
+    setCurrentPage(clampedPage)
+  }
+  const firstIndex = (clampedPage - 1) * pageSize
+  const lastIndex = firstIndex + pageSize
+  const pageItems = filteredInternships.slice(firstIndex, lastIndex)
+
+  const canPrevious = clampedPage > 1
+  const canNext = clampedPage < totalPages
 
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
@@ -105,8 +135,6 @@ export default function Internships() {
       default: return status
     }
   }
-
-  
 
   return (
     <div className="space-y-4 sm:space-y-6">
@@ -321,11 +349,20 @@ export default function Internships() {
               <Input
                 placeholder="Rechercher par titre, département ou superviseur..."
                 value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setCurrentPage(1) // reset page
+                }}
                 className="pl-10"
               />
             </div>
-            <Select value={selectedStatus} onValueChange={setSelectedStatus}>
+            <Select
+              value={selectedStatus}
+              onValueChange={(v) => {
+                setSelectedStatus(v)
+                setCurrentPage(1) // reset page
+              }}
+            >
               <SelectTrigger className="w-full sm:w-[200px]">
                 <SelectValue placeholder="Statut" />
               </SelectTrigger>
@@ -335,6 +372,25 @@ export default function Internships() {
                 <SelectItem value="assigned">Assigné</SelectItem>
                 <SelectItem value="in_progress">En cours</SelectItem>
                 <SelectItem value="completed">Terminé</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Choix pageSize */}
+            <Select
+              value={String(pageSize)}
+              onValueChange={(v) => {
+                setPageSize(Number(v))
+                setCurrentPage(1)
+              }}
+            >
+              <SelectTrigger className="w-full sm:w-[140px]">
+                <SelectValue placeholder="10 / page" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="5">5 / page</SelectItem>
+                <SelectItem value="10">10 / page</SelectItem>
+                <SelectItem value="20">20 / page</SelectItem>
+                <SelectItem value="50">50 / page</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -357,14 +413,16 @@ export default function Internships() {
                       Chargement...
                     </TableCell>
                   </TableRow>
-                ) : filteredInternships.length === 0 ? (
+                ) : pageItems.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} className="text-center py-8">
-                      Aucun stage trouvé
+                      {searchTerm || selectedStatus !== "all"
+                        ? "Aucun stage ne correspond aux critères de recherche"
+                        : "Aucun stage trouvé"}
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredInternships.map((internship) => (
+                  pageItems.map((internship) => (
                     <TableRow key={internship.id}>
                       <TableCell className="font-medium">
                         {internship.supervisor 
@@ -417,6 +475,36 @@ export default function Internships() {
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          {/* Pagination Footer */}
+          <div className="mt-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div className="text-sm text-muted-foreground">
+              {totalItems === 0
+                ? "0 résultat"
+                : `Affichage ${firstIndex + 1}–${Math.min(
+                    lastIndex,
+                    totalItems
+                  )} sur ${totalItems} · Page ${clampedPage}/${totalPages}`}
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={!canPrevious}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={!canNext}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
