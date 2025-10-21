@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/layout/header";
 import { DashboardLayout } from "@/components/layout/dashboard-layout";
+import { ProtectedRoute } from "@/components/auth/protected-route";
 import Landing from "./pages/Landing";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
@@ -20,6 +21,7 @@ import Users from "./pages/admin/Users";
 import Applications from "./pages/admin/Applications";
 import Internships from "./pages/admin/Internships";
 import Application from "./pages/Application";
+import Forbidden from "./pages/Forbidden";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -52,6 +54,135 @@ const App = () => (
             <Route path="/register" element={<Register />} />
             
             {/* Protected Dashboard Routes */}
+            {/* Admin Routes */}
+            <Route 
+              path="/admin/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/users" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <DashboardLayout>
+                    <Users />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/applications" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <DashboardLayout>
+                    <Applications />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/admin/internships" 
+              element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <DashboardLayout>
+                    <Internships />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Supervisor Routes */}
+            <Route 
+              path="/supervisor/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/supervisor/themes"
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <DashboardLayout>
+                    <SupervisorThemes />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/supervisor/tasks" 
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <DashboardLayout>
+                    <SupervisorTasks />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/supervisor/attendance" 
+              element={
+                <ProtectedRoute allowedRoles={['supervisor']}>
+                  <DashboardLayout>
+                    <SupervisorAttendance />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Candidate Routes */}
+            <Route 
+              path="/application" 
+              element={
+                <ProtectedRoute allowedRoles={['candidate']}>
+                  <DashboardLayout>
+                    <Application />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* Intern Routes */}
+            <Route 
+              path="/intern/dashboard" 
+              element={
+                <ProtectedRoute allowedRoles={['intern']}>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/intern/tasks" 
+              element={
+                <ProtectedRoute allowedRoles={['intern']}>
+                  <DashboardLayout>
+                    <InternTasks />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/intern/attendance" 
+              element={
+                <ProtectedRoute allowedRoles={['intern']}>
+                  <DashboardLayout>
+                    <InternAttendance />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              } 
+            />
+            
+            {/* General dashboard route */}
             <Route 
               path="/dashboard" 
               element={
@@ -60,116 +191,9 @@ const App = () => (
                 </DashboardLayout>
               } 
             />
-            <Route 
-              path="/admin/dashboard" 
-              element={
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/supervisor/dashboard" 
-              element={
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/supervisor/themes"
-              element={
-                <DashboardLayout>
-                  <SupervisorThemes />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/supervisor/tasks" 
-              element={
-                <DashboardLayout>
-                  <SupervisorTasks />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/supervisor/attendance" 
-              element={
-                <DashboardLayout>
-                  <SupervisorAttendance />
-                </DashboardLayout>
-              } 
-            />
             
-            {/* Admin Routes */}
-            <Route 
-              path="/admin/users" 
-              element={
-                <DashboardLayout>
-                  <Users />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/admin/applications" 
-              element={
-                <DashboardLayout>
-                  <Applications />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/admin/internships" 
-              element={
-                <DashboardLayout>
-                  <Internships />
-                </DashboardLayout>
-              } 
-            />
-            
-            {/* Candidate Routes */}
-            <Route 
-              path="/application" 
-              element={
-                <DashboardLayout>
-                  <Application />
-                </DashboardLayout>
-              } 
-            />
-            
-            {/* Intern Routes */}
-            <Route 
-              path="/intern/dashboard" 
-              element={
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/candidate/dashboard" 
-              element={
-                <DashboardLayout>
-                  <Dashboard />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/intern/tasks" 
-              element={
-                <DashboardLayout>
-                  <InternTasks />
-                </DashboardLayout>
-              } 
-            />
-            <Route 
-              path="/intern/attendance" 
-              element={
-                <DashboardLayout>
-                  <InternAttendance />
-                </DashboardLayout>
-              } 
-            />
+            {/* 403 Forbidden Route */}
+            <Route path="/forbidden" element={<Forbidden />} />
             
             {/* Catch-all route */}
             <Route path="*" element={<NotFound />} />
