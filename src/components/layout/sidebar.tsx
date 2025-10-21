@@ -54,9 +54,7 @@ export function Sidebar() {
       
       default: // candidate
         return [
-          { icon: LayoutDashboard, label: "Tableau de bord", href: "/dashboard" },
           { icon: FileText, label: "Ma Candidature", href: "/application" },
-          { icon: UserCheck, label: "Mon Profil", href: "/profile" }
         ]
     }
   }

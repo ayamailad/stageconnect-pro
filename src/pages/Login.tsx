@@ -65,7 +65,7 @@ export default function Login() {
           navigate("/intern/dashboard")
           break
         case 'candidate':
-          navigate("/candidate/dashboard")
+          navigate("/application")
           break
         default:
           navigate("/dashboard")
