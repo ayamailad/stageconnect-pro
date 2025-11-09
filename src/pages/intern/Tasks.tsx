@@ -183,15 +183,9 @@ export default function InternTasks() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                <div className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4 text-muted-foreground" />
-                  <span>Échéance: {format(new Date(task.dueDate), "dd MMM yyyy", { locale: fr })}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <User className="h-4 w-4 text-muted-foreground" />
-                  <span>Assigné par: {task.assignedBy}</span>
-                </div>
+              <div className="flex items-center gap-2 text-sm">
+                <CalendarIcon className="h-4 w-4 text-muted-foreground" />
+                <span>Échéance: {format(new Date(task.dueDate), "dd MMM yyyy", { locale: fr })}</span>
               </div>
               
               <div className="flex gap-2 mt-4">
@@ -247,10 +241,6 @@ export default function InternTasks() {
                   <div>
                     <Label>Date d'échéance</Label>
                     <p className="text-sm mt-1">{format(new Date(selectedTask.dueDate), "PPP", { locale: fr })}</p>
-                  </div>
-                  <div>
-                    <Label>Assigné par</Label>
-                    <p className="text-sm mt-1">{selectedTask.assignedBy}</p>
                   </div>
                 </div>
               </div>
