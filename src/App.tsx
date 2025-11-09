@@ -152,17 +152,7 @@ const App = () => (
             
             {/* Intern Routes */}
             <Route 
-              path="/intern/dashboard" 
-              element={
-                <ProtectedRoute allowedRoles={['intern']}>
-                  <DashboardLayout>
-                    <Dashboard />
-                  </DashboardLayout>
-                </ProtectedRoute>
-              } 
-            />
-            <Route 
-              path="/intern/tasks" 
+              path="/intern/tasks"
               element={
                 <ProtectedRoute allowedRoles={['intern']}>
                   <DashboardLayout>
