@@ -47,7 +47,6 @@ export function Sidebar() {
       
       case 'intern':
         return [
-          { icon: LayoutDashboard, label: "Tableau de bord", href: "/intern/dashboard" },
           { icon: Target, label: "Mes Tâches", href: "/intern/tasks" },
           { icon: Calendar, label: "Pointage", href: "/intern/attendance" }
         ]
