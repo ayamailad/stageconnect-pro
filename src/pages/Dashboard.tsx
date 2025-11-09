@@ -386,6 +386,19 @@ export default function Dashboard() {
       })
     }, [interns, supervisorAttendance])
 
+    // Absences by intern
+    const absencesByIntern = useMemo(() => {
+      return interns.slice(0, 5).map(intern => {
+        const internAttendance = supervisorAttendance.filter(a => a.intern_id === intern.id)
+        const absentCount = internAttendance.filter(a => a.status === 'absent').length
+        
+        return {
+          name: `${intern.first_name} ${intern.last_name}`,
+          absences: absentCount
+        }
+      }).filter(item => item.absences > 0)
+    }, [interns, supervisorAttendance])
+
     return (
       <div className="space-y-4 sm:space-y-6 animate-fade-in">
         <div>
@@ -421,6 +434,86 @@ export default function Dashboard() {
               })}
             </div>
 
+            {/* Charts section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+              {/* Tasks breakdown chart */}
+              {tasksChartData.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Tâches par Statut</CardTitle>
+                    <CardDescription>
+                      {completedTasks}/{totalTasks} tâches terminées ({completionRate}%)
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        todo: { label: "À faire", color: "hsl(var(--muted))" },
+                        in_progress: { label: "En cours", color: "hsl(var(--primary))" },
+                        completed: { label: "Terminées", color: "hsl(var(--success))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <PieChart>
+                        <Pie
+                          data={tasksChartData}
+                          dataKey="value"
+                          nameKey="name"
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          label
+                        >
+                          {tasksChartData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <ChartTooltip content={<ChartTooltipContent />} />
+                        <Legend />
+                      </PieChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Absences by intern bar chart */}
+              {absencesByIntern.length > 0 && (
+                <Card className="card-gradient">
+                  <CardHeader>
+                    <CardTitle className="text-base sm:text-lg">Absences des Stagiaires</CardTitle>
+                    <CardDescription>Nombre d'absences par stagiaire</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <ChartContainer
+                      config={{
+                        absences: { label: "Absences", color: "hsl(var(--destructive))" }
+                      }}
+                      className="h-[250px] w-full"
+                    >
+                      <BarChart data={absencesByIntern}>
+                        <XAxis 
+                          dataKey="name" 
+                          tick={{ fontSize: 12 }}
+                          angle={-45}
+                          textAnchor="end"
+                          height={80}
+                        />
+                        <YAxis />
+                        <ChartTooltip 
+                          content={<ChartTooltipContent />}
+                          formatter={(value) => [`${value}`, 'Absences']}
+                        />
+                        <Bar 
+                          dataKey="absences" 
+                          fill="hsl(var(--destructive))" 
+                          radius={[4, 4, 0, 0]}
+                        />
+                      </BarChart>
+                    </ChartContainer>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </>
         )}
       </div>
