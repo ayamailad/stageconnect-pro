@@ -170,9 +170,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut()
+      // Use local scope to force logout even if session doesn't exist
+      const { error } = await supabase.auth.signOut({ scope: 'local' })
       
-      if (error) {
+      // Only show error if it's not a session_not_found error
+      if (error && !error.message.includes('session_not_found')) {
         console.error('Logout error:', error)
         toast({
           title: "Erreur de déconnexion",
@@ -182,16 +184,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return
       }
 
+      // Clear local state
+      setUser(null)
+      setSession(null)
+
       toast({
         title: "Déconnexion",
         description: "Vous avez été déconnecté avec succès",
       })
     } catch (error) {
       console.error('Logout error:', error)
+      // Still clear local state even on error
+      setUser(null)
+      setSession(null)
+      
       toast({
-        title: "Erreur de déconnexion",
-        description: "Une erreur inattendue s'est produite",
-        variant: "destructive"
+        title: "Déconnexion",
+        description: "Vous avez été déconnecté",
       })
     }
   }
