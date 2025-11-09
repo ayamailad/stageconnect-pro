@@ -183,7 +183,7 @@ export default function InternTasks() {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
                 <div className="flex items-center gap-2">
                   <CalendarIcon className="h-4 w-4 text-muted-foreground" />
                   <span>Échéance: {format(new Date(task.dueDate), "dd MMM yyyy", { locale: fr })}</span>
@@ -191,10 +191,6 @@ export default function InternTasks() {
                 <div className="flex items-center gap-2">
                   <User className="h-4 w-4 text-muted-foreground" />
                   <span>Assigné par: {task.assignedBy}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span>Temps: {task.completedHours}h / {task.estimatedHours}h</span>
                 </div>
               </div>
               
@@ -255,21 +251,6 @@ export default function InternTasks() {
                   <div>
                     <Label>Assigné par</Label>
                     <p className="text-sm mt-1">{selectedTask.assignedBy}</p>
-                  </div>
-                </div>
-                <div>
-                  <Label>Progression</Label>
-                  <div className="mt-2">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span>{selectedTask.completedHours}h / {selectedTask.estimatedHours}h</span>
-                      <span>{Math.round((selectedTask.completedHours / selectedTask.estimatedHours) * 100)}%</span>
-                    </div>
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div 
-                        className="bg-primary h-2 rounded-full" 
-                        style={{ width: `${(selectedTask.completedHours / selectedTask.estimatedHours) * 100}%` }}
-                      ></div>
-                    </div>
                   </div>
                 </div>
               </div>
